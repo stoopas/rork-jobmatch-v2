@@ -142,7 +142,7 @@ export default function EditProfileScreen() {
       console.log("[mutationFn] === END MUTATION FUNCTION ===");
       return result;
     },
-    onSuccess: (parsed) => {
+    onSuccess: async (parsed) => {
       console.log("[onSuccess] === START ONSUCCESS CALLBACK ===");
       console.log("[onSuccess] Resume parsed successfully");
       console.log("[onSuccess] parsed data:", JSON.stringify(parsed, null, 2).slice(0, 500));
@@ -157,6 +157,8 @@ export default function EditProfileScreen() {
       const skills = (parsed?.skills || []).map((skill: any) => ({
         ...skill,
         id: Date.now().toString() + Math.random(),
+        source: 'resume_parse' as const,
+        confirmedAt: new Date().toISOString(),
       }));
       console.log("[onSuccess] Mapped skills count:", skills.length);
 
@@ -169,6 +171,8 @@ export default function EditProfileScreen() {
       const tools = (parsed?.tools || []).map((tool: any) => ({
         ...tool,
         id: Date.now().toString() + Math.random(),
+        source: 'resume_parse' as const,
+        confirmedAt: new Date().toISOString(),
       }));
       console.log("[onSuccess] Mapped tools count:", tools.length);
 
@@ -208,7 +212,14 @@ export default function EditProfileScreen() {
       console.log("[onSuccess] - tools.length:", updatedProfileData.tools.length);
       console.log("[onSuccess] - projects.length:", updatedProfileData.projects.length);
 
-      updateProfile(updatedProfileData);
+      try {
+        await updateProfile(updatedProfileData);
+        console.log("[onSuccess] updateProfile completed successfully");
+      } catch (err) {
+        console.error("[onSuccess] updateProfile failed:", err);
+        Alert.alert("Error", "Failed to save parsed resume data to profile");
+        return;
+      }
 
       console.log("[onSuccess] updateProfile called, showing success alert");
       showParseSuccessAlert(parsed, () => {

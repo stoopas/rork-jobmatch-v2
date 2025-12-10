@@ -54,7 +54,7 @@ export const [UserProfileProvider, useUserProfile] = createContextHook(() => {
     },
   });
 
-  const { mutate: saveProfile, isPending: isSavingProfile } = useMutation({
+  const { mutateAsync: saveProfileAsync, isPending: isSavingProfile } = useMutation({
     mutationFn: async (newProfile: UserProfile) => {
       console.log("[saveProfile mutation] Saving profile to AsyncStorage...");
       console.log("[saveProfile mutation] Profile data:", {
@@ -65,8 +65,23 @@ export const [UserProfileProvider, useUserProfile] = createContextHook(() => {
         projects: newProfile.projects?.length,
         domainExperience: newProfile.domainExperience?.length,
       });
-      await AsyncStorage.setItem(PROFILE_KEY, JSON.stringify(newProfile));
+      const serialized = JSON.stringify(newProfile);
+      console.log("[saveProfile mutation] Serialized length:", serialized.length);
+      await AsyncStorage.setItem(PROFILE_KEY, serialized);
       console.log("[saveProfile mutation] Profile saved to AsyncStorage");
+      
+      const verification = await AsyncStorage.getItem(PROFILE_KEY);
+      if (verification) {
+        const parsed = JSON.parse(verification);
+        console.log("[saveProfile mutation] Verification - saved data:", {
+          experience: parsed.experience?.length,
+          skills: parsed.skills?.length,
+          certifications: parsed.certifications?.length,
+          tools: parsed.tools?.length,
+          projects: parsed.projects?.length,
+        });
+      }
+      
       return newProfile;
     },
     onSuccess: (saved) => {
@@ -78,6 +93,7 @@ export const [UserProfileProvider, useUserProfile] = createContextHook(() => {
         projects: saved.projects?.length,
         domainExperience: saved.domainExperience?.length,
       });
+      setProfile(saved);
     },
     onError: (error) => {
       console.error("[saveProfile onError] Failed to save profile:", error);
@@ -117,7 +133,7 @@ export const [UserProfileProvider, useUserProfile] = createContextHook(() => {
   }, [jobsQuery.data]);
 
   const updateProfile = useCallback(
-    (updates: Partial<UserProfile>) => {
+    async (updates: Partial<UserProfile>) => {
       console.log("[UserProfileContext] updateProfile called with updates:", {
         experience: updates.experience?.length,
         skills: updates.skills?.length,
@@ -144,10 +160,16 @@ export const [UserProfileProvider, useUserProfile] = createContextHook(() => {
         domainExperience: updated.domainExperience?.length,
       });
       setProfile(updated);
-      console.log("[UserProfileContext] Calling saveProfile mutation...");
-      saveProfile(updated);
+      console.log("[UserProfileContext] Calling saveProfileAsync mutation...");
+      try {
+        await saveProfileAsync(updated);
+        console.log("[UserProfileContext] saveProfileAsync completed successfully");
+      } catch (err) {
+        console.error("[UserProfileContext] saveProfileAsync failed:", err);
+        throw err;
+      }
     },
-    [profile, saveProfile]
+    [profile, saveProfileAsync]
   );
 
   const addQA = useCallback(
