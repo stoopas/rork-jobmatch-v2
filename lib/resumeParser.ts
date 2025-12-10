@@ -8,7 +8,7 @@ export const resumeSchema = z.object({
       title: z.string(),
       company: z.string(),
       startDate: z.string(),
-      endDate: z.string().optional(),
+      endDate: z.string().nullable().optional(),
       current: z.boolean(),
       description: z.string(),
       achievements: z.array(z.string()),
@@ -58,8 +58,8 @@ Required JSON schema:
     "title": "Job Title",
     "company": "Company Name",
     "startDate": "YYYY-MM",
-    "endDate": "YYYY-MM",
-    "current": false,
+    "endDate": "YYYY-MM or null for current positions",
+    "current": true if this is a current position,
     "description": "Brief job description",
     "achievements": ["Achievement 1", "Achievement 2"]
   }],
@@ -72,6 +72,8 @@ Required JSON schema:
 
 Instructions:
 - Extract ALL work experience with full details
+- For current positions, set "current": true and "endDate": null
+- For past positions, set "current": false and provide "endDate": "YYYY-MM"
 - List ALL technical skills and tools separately
 - Identify certifications and educational qualifications
 - Extract project information if present
