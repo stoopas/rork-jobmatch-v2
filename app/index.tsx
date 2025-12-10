@@ -1,7 +1,11 @@
+import * as DocumentPicker from "expo-document-picker";
+import * as FileSystem from "expo-file-system";
 import { router } from "expo-router";
-import { FileText, Plus, Sparkles } from "lucide-react-native";
-import React from "react";
+import { FileText, Plus, Sparkles, Upload, Briefcase } from "lucide-react-native";
+import React, { useState } from "react";
 import {
+  ActivityIndicator,
+  Alert,
   ScrollView,
   StyleSheet,
   Text,
@@ -9,13 +13,230 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useMutation } from "@tanstack/react-query";
 
 import { useUserProfile } from "../contexts/UserProfileContext";
+import { parseResumeText, showParseSuccessAlert, type ResumeData } from "../lib/resumeParser";
 
 export default function HomeScreen() {
-  const { profile } = useUserProfile();
+  const { profile, updateProfile, isProfileComplete } = useUserProfile();
+  const [isOnboarding, setIsOnboarding] = useState(false);
 
-  const hasProfile = profile.experience.length > 0 || profile.skills.length > 0;
+  const hasProfile = isProfileComplete();
+
+  const { mutateAsync: parseResumeAsync, isPending: isParsingResume } = useMutation<ResumeData, Error, string>({
+    mutationFn: async (resumeText: string): Promise<ResumeData> => {
+      return await parseResumeText(resumeText);
+    },
+    onSuccess: (parsed) => {
+      console.log("[onboarding] Resume parsed successfully", parsed);
+
+      const experience = (parsed?.experience || []).map((exp: any) => ({
+        ...exp,
+        id: Date.now().toString() + Math.random(),
+      }));
+
+      const skills = (parsed?.skills || []).map((skill: any) => ({
+        ...skill,
+        id: Date.now().toString() + Math.random(),
+        source: 'resume_parse' as const,
+        confirmedAt: new Date().toISOString(),
+      }));
+
+      const certifications = (parsed?.certifications || []).map((cert: any) => ({
+        ...cert,
+        id: Date.now().toString() + Math.random(),
+      }));
+
+      const tools = (parsed?.tools || []).map((tool: any) => ({
+        ...tool,
+        id: Date.now().toString() + Math.random(),
+        source: 'resume_parse' as const,
+        confirmedAt: new Date().toISOString(),
+      }));
+
+      const projects = (parsed?.projects || []).map((project: any) => ({
+        ...project,
+        id: Date.now().toString() + Math.random(),
+      }));
+
+      const domainExperience = parsed?.domainExperience || [];
+
+      updateProfile({
+        experience: [...profile.experience, ...experience],
+        skills: [...profile.skills, ...skills],
+        certifications: [...profile.certifications, ...certifications],
+        tools: [...profile.tools, ...tools],
+        projects: [...profile.projects, ...projects],
+        domainExperience: [
+          ...profile.domainExperience,
+          ...domainExperience,
+        ],
+      });
+
+      showParseSuccessAlert(parsed, () => {
+        router.push("/job/analyze");
+      });
+
+      setIsOnboarding(false);
+    },
+    onError: (error) => {
+      console.error("[onboarding] onError:", error?.message ?? error);
+      Alert.alert("Error", error?.message ? `Failed to parse resume: ${error.message}` : "Failed to parse resume. Please try again or add information manually.");
+    },
+  });
+
+  const handleUploadResume = async () => {
+    console.log("[onboarding] Starting resume upload...");
+    setIsOnboarding(true);
+    
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: [
+          "application/pdf",
+          "application/msword",
+          "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+          "text/plain",
+        ],
+        copyToCacheDirectory: true,
+      });
+
+      console.log("[onboarding] Document picker result:", result);
+
+      if (result.canceled) {
+        console.log("[onboarding] Upload canceled by user");
+        setIsOnboarding(false);
+        return;
+      }
+
+      const file = result.assets?.[0];
+      if (!file || !file.uri) {
+        console.error("[onboarding] No file selected");
+        Alert.alert("Error", "No file selected. Please try again.");
+        setIsOnboarding(false);
+        return;
+      }
+
+      console.log("[onboarding] File selected:", file.name);
+
+      let content: string | null = null;
+      try {
+        content = await FileSystem.readAsStringAsync(file.uri);
+        console.log("[onboarding] FileSystem read succeeded");
+      } catch (fsErr) {
+        console.warn("[onboarding] FileSystem failed, trying fetch", fsErr);
+        try {
+          const resp = await fetch(file.uri);
+          content = await resp.text();
+          console.log("[onboarding] Fetch fallback succeeded");
+        } catch (fetchErr) {
+          console.error("[onboarding] Fetch fallback failed:", fetchErr);
+          content = null;
+        }
+      }
+
+      if (!content) {
+        console.error("[onboarding] Content is null");
+        Alert.alert("Error", "Could not read selected file. Try a different file.");
+        setIsOnboarding(false);
+        return;
+      }
+
+      console.log("[onboarding] File read successfully, length:", content.length);
+
+      try {
+        await parseResumeAsync(content);
+      } catch (err: any) {
+        console.error("[onboarding] parseResumeAsync error:", err?.message ?? err);
+        Alert.alert("Error", err?.message ? `Failed to parse resume: ${err.message}` : "Failed to parse resume. Please try again.");
+      }
+    } catch (error) {
+      console.error("[onboarding] Upload error:", error);
+      Alert.alert("Error", "Failed to upload resume. Please try again.");
+    } finally {
+      setIsOnboarding(false);
+    }
+  };
+
+  if (!hasProfile) {
+    return (
+      <SafeAreaView style={styles.container} edges={["top"]}>
+        <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+          <View style={styles.onboardingContainer}>
+            <View style={styles.onboardingIconContainer}>
+              <Sparkles size={48} color="#0066FF" strokeWidth={2} />
+            </View>
+
+            <Text style={styles.onboardingTitle}>Welcome to JobMatch</Text>
+            <Text style={styles.onboardingSubtitle}>
+              Your AI-powered resume tailoring assistant
+            </Text>
+
+            <Text style={styles.onboardingDescription}>
+              Say goodbye to the hassle of customizing resumes for every job.{"\n\n"}
+              JobMatch makes it effortless:{"\n"}
+              • Set up once with your resume{"\n"}
+              • Paste any job posting{"\n"}
+              • Get a perfectly tailored resume{"\n\n"}
+              The app learns from your answers and gets smarter over time.
+            </Text>
+
+            <View style={styles.onboardingActionsContainer}>
+              <Text style={styles.onboardingActionsTitle}>Get Started</Text>
+
+              <TouchableOpacity
+                style={styles.onboardingPrimaryButton}
+                onPress={handleUploadResume}
+                disabled={isParsingResume || isOnboarding}
+              >
+                {isParsingResume || isOnboarding ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <Upload size={24} color="#FFFFFF" />
+                )}
+                <View style={styles.onboardingButtonTextContainer}>
+                  <Text style={styles.onboardingPrimaryButtonText}>
+                    {isParsingResume || isOnboarding ? "Processing..." : "Upload Your Resume"}
+                  </Text>
+                  <Text style={styles.onboardingPrimaryButtonSubtext}>
+                    PDF, DOC, DOCX, or TXT
+                  </Text>
+                </View>
+              </TouchableOpacity>
+
+              <View style={styles.onboardingDivider}>
+                <View style={styles.onboardingDividerLine} />
+                <Text style={styles.onboardingDividerText}>or</Text>
+                <View style={styles.onboardingDividerLine} />
+              </View>
+
+              <TouchableOpacity
+                style={styles.onboardingSecondaryButton}
+                onPress={() => router.push("/profile/edit")}
+                disabled={isParsingResume || isOnboarding}
+              >
+                <Plus size={20} color="#0066FF" />
+                <Text style={styles.onboardingSecondaryButtonText}>
+                  Add Information Manually
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.onboardingTertiaryButton}
+                onPress={() => router.push("/chat")}
+                disabled={isParsingResume || isOnboarding}
+              >
+                <Sparkles size={20} color="#0066FF" />
+                <Text style={styles.onboardingTertiaryButtonText}>
+                  Chat with AI Assistant
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
@@ -26,82 +247,68 @@ export default function HomeScreen() {
             <Text style={styles.title}>JobMatch</Text>
           </View>
           <Text style={styles.subtitle}>
-            AI-Powered Resume Tailoring for Your Dream Job
+            Paste a job posting. Get a tailored resume.
           </Text>
         </View>
 
-        {!hasProfile && (
-          <View style={styles.welcomeCard}>
-            <Text style={styles.welcomeTitle}>Welcome! Let&apos;s Get Started</Text>
-            <Text style={styles.welcomeText}>
-              Add your experience and skills to build your profile. I&apos;ll learn
-              about you and help create tailored resumes for any job posting.
-            </Text>
+        <View style={styles.profileCard}>
+          <View style={styles.profileHeader}>
+            <FileText size={24} color="#0066FF" />
+            <Text style={styles.profileTitle}>Your Profile</Text>
           </View>
-        )}
-
-        {hasProfile && (
-          <View style={styles.profileCard}>
-            <View style={styles.profileHeader}>
-              <FileText size={24} color="#0066FF" />
-              <Text style={styles.profileTitle}>Your Profile</Text>
+          <View style={styles.statsContainer}>
+            <View style={styles.statItem}>
+              <Text style={styles.statNumber}>{profile.experience.length}</Text>
+              <Text style={styles.statLabel}>Experiences</Text>
             </View>
-            <View style={styles.statsContainer}>
-              <View style={styles.statItem}>
-                <Text style={styles.statNumber}>{profile.experience.length}</Text>
-                <Text style={styles.statLabel}>Experiences</Text>
-              </View>
-              <View style={styles.statDivider} />
-              <View style={styles.statItem}>
-                <Text style={styles.statNumber}>{profile.skills.length}</Text>
-                <Text style={styles.statLabel}>Skills</Text>
-              </View>
-              <View style={styles.statDivider} />
-              <View style={styles.statItem}>
-                <Text style={styles.statNumber}>
-                  {profile.certifications.length}
-                </Text>
-                <Text style={styles.statLabel}>Certifications</Text>
-              </View>
+            <View style={styles.statDivider} />
+            <View style={styles.statItem}>
+              <Text style={styles.statNumber}>{profile.skills.length}</Text>
+              <Text style={styles.statLabel}>Skills</Text>
             </View>
-            <TouchableOpacity
-              style={styles.editButton}
-              onPress={() => router.push("/profile/edit")}
-            >
-              <Text style={styles.editButtonText}>Edit Profile</Text>
-            </TouchableOpacity>
+            <View style={styles.statDivider} />
+            <View style={styles.statItem}>
+              <Text style={styles.statNumber}>{profile.tools.length}</Text>
+              <Text style={styles.statLabel}>Tools</Text>
+            </View>
           </View>
-        )}
+          <TouchableOpacity
+            style={styles.editButton}
+            onPress={() => router.push("/profile/edit")}
+          >
+            <Text style={styles.editButtonText}>Edit Profile</Text>
+          </TouchableOpacity>
+        </View>
 
         <View style={styles.actionsContainer}>
           <Text style={styles.actionsTitle}>Quick Actions</Text>
 
           <TouchableOpacity
             style={styles.actionCard}
-            onPress={() => router.push("/chat")}
+            onPress={() => router.push("/job/analyze")}
           >
             <View style={styles.actionIconContainer}>
-              <Sparkles size={24} color="#0066FF" />
+              <Briefcase size={24} color="#FFFFFF" />
             </View>
             <View style={styles.actionContent}>
-              <Text style={styles.actionTitle}>Chat with JobMatch AI</Text>
+              <Text style={styles.actionTitle}>Paste Job Posting</Text>
               <Text style={styles.actionDescription}>
-                Upload resume, analyze jobs, and get tailored advice
+                Get a tailored resume in seconds
               </Text>
             </View>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={styles.actionCard}
-            onPress={() => router.push("/profile/edit")}
+            style={styles.actionCardSecondary}
+            onPress={() => router.push("/chat")}
           >
-            <View style={styles.actionIconContainer}>
-              <Plus size={24} color="#0066FF" />
+            <View style={styles.actionIconContainerSecondary}>
+              <Sparkles size={24} color="#0066FF" />
             </View>
             <View style={styles.actionContent}>
-              <Text style={styles.actionTitle}>Manual Profile Edit</Text>
-              <Text style={styles.actionDescription}>
-                Directly add or edit your experience and skills
+              <Text style={styles.actionTitleSecondary}>Chat with AI</Text>
+              <Text style={styles.actionDescriptionSecondary}>
+                Improve your profile or ask questions
               </Text>
             </View>
           </TouchableOpacity>
@@ -143,29 +350,10 @@ const styles = StyleSheet.create({
     letterSpacing: -0.5,
   },
   subtitle: {
-    fontSize: 16,
-    color: "#666666",
-    lineHeight: 22,
-  },
-  welcomeCard: {
-    marginHorizontal: 24,
-    marginTop: 16,
-    padding: 20,
-    backgroundColor: "#EBF3FF",
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: "#D1E3FF",
-  },
-  welcomeTitle: {
     fontSize: 18,
-    fontWeight: "600" as const,
-    color: "#0066FF",
-    marginBottom: 8,
-  },
-  welcomeText: {
-    fontSize: 15,
-    color: "#004CB3",
-    lineHeight: 22,
+    color: "#666666",
+    lineHeight: 24,
+    fontWeight: "500" as const,
   },
   profileCard: {
     marginHorizontal: 24,
@@ -240,8 +428,21 @@ const styles = StyleSheet.create({
   actionCard: {
     flexDirection: "row",
     alignItems: "center",
+    backgroundColor: "#0066FF",
+    padding: 20,
+    borderRadius: 16,
+    marginBottom: 12,
+    shadowColor: "#0066FF",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  actionCardSecondary: {
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: "#FFFFFF",
-    padding: 16,
+    padding: 20,
     borderRadius: 16,
     marginBottom: 12,
     shadowColor: "#000",
@@ -251,9 +452,18 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   actionIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
+    width: 56,
+    height: 56,
+    borderRadius: 14,
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 16,
+  },
+  actionIconContainerSecondary: {
+    width: 56,
+    height: 56,
+    borderRadius: 14,
     backgroundColor: "#EBF3FF",
     alignItems: "center",
     justifyContent: "center",
@@ -263,12 +473,23 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   actionTitle: {
-    fontSize: 16,
+    fontSize: 18,
+    fontWeight: "600" as const,
+    color: "#FFFFFF",
+    marginBottom: 4,
+  },
+  actionTitleSecondary: {
+    fontSize: 18,
     fontWeight: "600" as const,
     color: "#1A1A1A",
     marginBottom: 4,
   },
   actionDescription: {
+    fontSize: 14,
+    color: "rgba(255, 255, 255, 0.85)",
+    lineHeight: 20,
+  },
+  actionDescriptionSecondary: {
     fontSize: 14,
     color: "#666666",
     lineHeight: 20,
@@ -282,5 +503,126 @@ const styles = StyleSheet.create({
   footerText: {
     fontSize: 13,
     color: "#999999",
+  },
+  onboardingContainer: {
+    flex: 1,
+    paddingHorizontal: 24,
+    paddingTop: 32,
+    paddingBottom: 48,
+  },
+  onboardingIconContainer: {
+    width: 96,
+    height: 96,
+    borderRadius: 24,
+    backgroundColor: "#EBF3FF",
+    alignItems: "center",
+    justifyContent: "center",
+    alignSelf: "center",
+    marginBottom: 24,
+  },
+  onboardingTitle: {
+    fontSize: 32,
+    fontWeight: "700" as const,
+    color: "#1A1A1A",
+    textAlign: "center",
+    marginBottom: 12,
+    letterSpacing: -0.5,
+  },
+  onboardingSubtitle: {
+    fontSize: 18,
+    fontWeight: "500" as const,
+    color: "#666666",
+    textAlign: "center",
+    marginBottom: 32,
+  },
+  onboardingDescription: {
+    fontSize: 16,
+    color: "#666666",
+    lineHeight: 26,
+    marginBottom: 40,
+  },
+  onboardingActionsContainer: {
+    marginTop: 8,
+  },
+  onboardingActionsTitle: {
+    fontSize: 20,
+    fontWeight: "600" as const,
+    color: "#1A1A1A",
+    marginBottom: 20,
+  },
+  onboardingPrimaryButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#0066FF",
+    paddingVertical: 20,
+    paddingHorizontal: 24,
+    borderRadius: 16,
+    gap: 16,
+    shadowColor: "#0066FF",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  onboardingButtonTextContainer: {
+    flex: 1,
+  },
+  onboardingPrimaryButtonText: {
+    fontSize: 17,
+    fontWeight: "700" as const,
+    color: "#FFFFFF",
+    marginBottom: 4,
+  },
+  onboardingPrimaryButtonSubtext: {
+    fontSize: 13,
+    color: "#FFFFFF",
+    opacity: 0.9,
+  },
+  onboardingDivider: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginVertical: 24,
+    gap: 12,
+  },
+  onboardingDividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: "#E5E5E5",
+  },
+  onboardingDividerText: {
+    fontSize: 14,
+    color: "#999999",
+    fontWeight: "500" as const,
+  },
+  onboardingSecondaryButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+    backgroundColor: "#EBF3FF",
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    marginBottom: 12,
+  },
+  onboardingSecondaryButtonText: {
+    fontSize: 16,
+    fontWeight: "600" as const,
+    color: "#0066FF",
+  },
+  onboardingTertiaryButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+    backgroundColor: "#F0F0F0",
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+  },
+  onboardingTertiaryButtonText: {
+    fontSize: 16,
+    fontWeight: "600" as const,
+    color: "#0066FF",
   },
 });

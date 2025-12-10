@@ -3,7 +3,7 @@ import createContextHook from "@nkzw/create-context-hook";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-import type { UserProfile, QAItem, JobPosting } from "../types/profile";
+import type { UserProfile, QAItem, JobPosting, Skill, Tool, ClarifyingAnswer } from "../types/profile";
 
 const PROFILE_KEY = "user_profile";
 const QA_HISTORY_KEY = "qa_history";
@@ -127,6 +127,90 @@ export const [UserProfileProvider, useUserProfile] = createContextHook(() => {
     setJobPostings([]);
   }, []);
 
+  const addOrUpdateSkill = useCallback(
+    (skill: Omit<Skill, 'id'> & { id?: string }) => {
+      const existing = profile.skills.find(
+        (s) => s.name.toLowerCase() === skill.name.toLowerCase()
+      );
+      
+      if (existing) {
+        updateProfile({
+          skills: profile.skills.map((s) =>
+            s.id === existing.id ? { ...s, ...skill, id: s.id } : s
+          ),
+        });
+      } else {
+        updateProfile({
+          skills: [
+            ...profile.skills,
+            {
+              id: Date.now().toString() + Math.random(),
+              ...skill,
+              name: skill.name,
+              category: skill.category || 'General',
+            } as Skill,
+          ],
+        });
+      }
+    },
+    [profile.skills, updateProfile]
+  );
+
+  const addOrUpdateTool = useCallback(
+    (tool: Omit<Tool, 'id'> & { id?: string }) => {
+      const existing = profile.tools.find(
+        (t) => t.name.toLowerCase() === tool.name.toLowerCase()
+      );
+      
+      if (existing) {
+        updateProfile({
+          tools: profile.tools.map((t) =>
+            t.id === existing.id ? { ...t, ...tool, id: t.id } : t
+          ),
+        });
+      } else {
+        updateProfile({
+          tools: [
+            ...profile.tools,
+            {
+              id: Date.now().toString() + Math.random(),
+              ...tool,
+              name: tool.name,
+              category: tool.category || 'General',
+            } as Tool,
+          ],
+        });
+      }
+    },
+    [profile.tools, updateProfile]
+  );
+
+  const recordClarifyingAnswer = useCallback(
+    (topicKey: string, answer: Omit<ClarifyingAnswer, 'timestamp'>) => {
+      updateProfile({
+        clarifyingAnswers: {
+          ...profile.clarifyingAnswers,
+          [topicKey]: {
+            ...answer,
+            timestamp: new Date().toISOString(),
+          },
+        },
+      });
+    },
+    [profile.clarifyingAnswers, updateProfile]
+  );
+
+  const hasClarificationFor = useCallback(
+    (topicKey: string): boolean => {
+      return !!profile.clarifyingAnswers[topicKey];
+    },
+    [profile.clarifyingAnswers]
+  );
+
+  const isProfileComplete = useCallback((): boolean => {
+    return profile.experience.length > 0 && profile.skills.length > 0;
+  }, [profile.experience.length, profile.skills.length]);
+
   return useMemo(
     () => ({
       profile,
@@ -136,6 +220,11 @@ export const [UserProfileProvider, useUserProfile] = createContextHook(() => {
       addQA,
       addJobPosting,
       clearAllData,
+      addOrUpdateSkill,
+      addOrUpdateTool,
+      recordClarifyingAnswer,
+      hasClarificationFor,
+      isProfileComplete,
       isLoading:
         profileQuery.isLoading || qaQuery.isLoading || jobsQuery.isLoading,
       isSaving: isSavingProfile || isSavingQA || isSavingJobs,
@@ -148,6 +237,11 @@ export const [UserProfileProvider, useUserProfile] = createContextHook(() => {
       addQA,
       addJobPosting,
       clearAllData,
+      addOrUpdateSkill,
+      addOrUpdateTool,
+      recordClarifyingAnswer,
+      hasClarificationFor,
+      isProfileComplete,
       profileQuery.isLoading,
       qaQuery.isLoading,
       jobsQuery.isLoading,

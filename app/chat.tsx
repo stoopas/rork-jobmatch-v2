@@ -506,8 +506,7 @@ Resume text:
 ${content}`,
             },
           ],
-          // @ts-expect-error - generateObject schema type definition issue
-          schema: resumeSchema,
+            schema: resumeSchema as any,
         });
       } catch (parseError) {
         console.error("[handleUpload] Parse error:", parseError);

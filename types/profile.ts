@@ -13,6 +13,9 @@ export interface Skill {
   id: string;
   name: string;
   category: string;
+  proficiency?: number;
+  source?: 'resume_parse' | 'chat_clarification' | 'manual_entry' | 'inferred';
+  confirmedAt?: string;
 }
 
 export interface Certification {
@@ -26,6 +29,9 @@ export interface Tool {
   id: string;
   name: string;
   category: string;
+  proficiency?: number;
+  source?: 'resume_parse' | 'chat_clarification' | 'manual_entry' | 'inferred';
+  confirmedAt?: string;
 }
 
 export interface Project {
@@ -67,6 +73,9 @@ export interface ClarifyingAnswer {
   answer: string;
   category: string;
   timestamp: string;
+  topic?: string;
+  proficiencyLevel?: number;
+  confirmed?: boolean;
 }
 
 export interface JobPosting {
@@ -95,5 +104,10 @@ export interface FitScore {
     domainRelevance: string;
     stageCulturalFit: string;
     impactPotential: string;
+  };
+  gaps?: {
+    missingSkills: string[];
+    missingTools: string[];
+    missingDomains: string[];
   };
 }
