@@ -135,40 +135,61 @@ export default function EditProfileScreen() {
 
   const { mutateAsync: parseResumeAsync, isPending: isParsingResume } = useMutation<ResumeData, Error, string>({
     mutationFn: async (resumeText: string): Promise<ResumeData> => {
-      return await parseResumeText(resumeText);
+      console.log("[mutationFn] === START MUTATION FUNCTION ===");
+      console.log("[mutationFn] About to call parseResumeText...");
+      const result = await parseResumeText(resumeText);
+      console.log("[mutationFn] parseResumeText completed, result:", result);
+      console.log("[mutationFn] === END MUTATION FUNCTION ===");
+      return result;
     },
     onSuccess: (parsed) => {
-      console.log("[parseResume] Resume parsed successfully", parsed);
+      console.log("[onSuccess] === START ONSUCCESS CALLBACK ===");
+      console.log("[onSuccess] Resume parsed successfully");
+      console.log("[onSuccess] parsed data:", JSON.stringify(parsed, null, 2).slice(0, 500));
 
       // Defensive guards: ensure arrays exist and use optional chaining
       const experience = (parsed?.experience || []).map((exp: any) => ({
         ...exp,
         id: Date.now().toString() + Math.random(),
       }));
+      console.log("[onSuccess] Mapped experience count:", experience.length);
 
       const skills = (parsed?.skills || []).map((skill: any) => ({
         ...skill,
         id: Date.now().toString() + Math.random(),
       }));
+      console.log("[onSuccess] Mapped skills count:", skills.length);
 
       const certifications = (parsed?.certifications || []).map((cert: any) => ({
         ...cert,
         id: Date.now().toString() + Math.random(),
       }));
+      console.log("[onSuccess] Mapped certifications count:", certifications.length);
 
       const tools = (parsed?.tools || []).map((tool: any) => ({
         ...tool,
         id: Date.now().toString() + Math.random(),
       }));
+      console.log("[onSuccess] Mapped tools count:", tools.length);
 
       const projects = (parsed?.projects || []).map((project: any) => ({
         ...project,
         id: Date.now().toString() + Math.random(),
       }));
+      console.log("[onSuccess] Mapped projects count:", projects.length);
 
       const domainExperience = parsed?.domainExperience || [];
+      console.log("[onSuccess] Domain experience count:", domainExperience.length);
 
-      updateProfile({
+      console.log("[onSuccess] Current profile state:");
+      console.log("[onSuccess] - profile.experience.length:", profile.experience.length);
+      console.log("[onSuccess] - profile.skills.length:", profile.skills.length);
+      console.log("[onSuccess] - profile.certifications.length:", profile.certifications.length);
+      console.log("[onSuccess] - profile.tools.length:", profile.tools.length);
+      console.log("[onSuccess] - profile.projects.length:", profile.projects.length);
+      console.log("[onSuccess] - profile.domainExperience.length:", profile.domainExperience.length);
+
+      const updatedProfileData = {
         experience: [...profile.experience, ...experience],
         skills: [...profile.skills, ...skills],
         certifications: [...profile.certifications, ...certifications],
@@ -178,14 +199,28 @@ export default function EditProfileScreen() {
           ...profile.domainExperience,
           ...domainExperience,
         ],
-      });
+      };
 
+      console.log("[onSuccess] About to call updateProfile with:");
+      console.log("[onSuccess] - experience.length:", updatedProfileData.experience.length);
+      console.log("[onSuccess] - skills.length:", updatedProfileData.skills.length);
+      console.log("[onSuccess] - certifications.length:", updatedProfileData.certifications.length);
+      console.log("[onSuccess] - tools.length:", updatedProfileData.tools.length);
+      console.log("[onSuccess] - projects.length:", updatedProfileData.projects.length);
+
+      updateProfile(updatedProfileData);
+
+      console.log("[onSuccess] updateProfile called, showing success alert");
       showParseSuccessAlert(parsed, () => {
+        console.log("[onSuccess] User pressed 'Tailor to Job', navigating to /job/analyze");
         router.push("/job/analyze");
       });
+      console.log("[onSuccess] === END ONSUCCESS CALLBACK ===");
     },
     onError: (error) => {
-      console.error("[parseResume] onError:", error?.message ?? error, error?.stack ?? error);
+      console.error("[onError] === START ONERROR CALLBACK ===");
+      console.error("[onError] Error:", error?.message ?? error, error?.stack ?? error);
+      console.error("[onError] === END ONERROR CALLBACK ===");
       Alert.alert("Error", error?.message ? `Failed to parse resume: ${error.message}` : "Failed to parse resume. Please try again or add information manually.");
     },
   });

@@ -56,8 +56,31 @@ export const [UserProfileProvider, useUserProfile] = createContextHook(() => {
 
   const { mutate: saveProfile, isPending: isSavingProfile } = useMutation({
     mutationFn: async (newProfile: UserProfile) => {
+      console.log("[saveProfile mutation] Saving profile to AsyncStorage...");
+      console.log("[saveProfile mutation] Profile data:", {
+        experience: newProfile.experience?.length,
+        skills: newProfile.skills?.length,
+        certifications: newProfile.certifications?.length,
+        tools: newProfile.tools?.length,
+        projects: newProfile.projects?.length,
+        domainExperience: newProfile.domainExperience?.length,
+      });
       await AsyncStorage.setItem(PROFILE_KEY, JSON.stringify(newProfile));
+      console.log("[saveProfile mutation] Profile saved to AsyncStorage");
       return newProfile;
+    },
+    onSuccess: (saved) => {
+      console.log("[saveProfile onSuccess] Profile successfully saved", {
+        experience: saved.experience?.length,
+        skills: saved.skills?.length,
+        certifications: saved.certifications?.length,
+        tools: saved.tools?.length,
+        projects: saved.projects?.length,
+        domainExperience: saved.domainExperience?.length,
+      });
+    },
+    onError: (error) => {
+      console.error("[saveProfile onError] Failed to save profile:", error);
     },
   });
 
@@ -95,8 +118,33 @@ export const [UserProfileProvider, useUserProfile] = createContextHook(() => {
 
   const updateProfile = useCallback(
     (updates: Partial<UserProfile>) => {
+      console.log("[UserProfileContext] updateProfile called with updates:", {
+        experience: updates.experience?.length,
+        skills: updates.skills?.length,
+        certifications: updates.certifications?.length,
+        tools: updates.tools?.length,
+        projects: updates.projects?.length,
+        domainExperience: updates.domainExperience?.length,
+      });
+      console.log("[UserProfileContext] Current profile before update:", {
+        experience: profile.experience?.length,
+        skills: profile.skills?.length,
+        certifications: profile.certifications?.length,
+        tools: profile.tools?.length,
+        projects: profile.projects?.length,
+        domainExperience: profile.domainExperience?.length,
+      });
       const updated = { ...profile, ...updates };
+      console.log("[UserProfileContext] Updated profile:", {
+        experience: updated.experience?.length,
+        skills: updated.skills?.length,
+        certifications: updated.certifications?.length,
+        tools: updated.tools?.length,
+        projects: updated.projects?.length,
+        domainExperience: updated.domainExperience?.length,
+      });
       setProfile(updated);
+      console.log("[UserProfileContext] Calling saveProfile mutation...");
       saveProfile(updated);
     },
     [profile, saveProfile]

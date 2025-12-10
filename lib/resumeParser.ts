@@ -46,7 +46,9 @@ export const resumeSchema = z.object({
 export type ResumeData = z.infer<typeof resumeSchema>;
 
 export async function parseResumeText(resumeText: string): Promise<ResumeData> {
+  console.log("[parseResume] === START PARSE FUNCTION ===");
   console.log("[parseResume] Parsing resume with AI via generateText...");
+  console.log("[parseResume] Resume text length:", resumeText.length);
 
   const prompt = `Extract all information from this resume and return ONLY valid JSON that matches the schema:
 {
@@ -67,17 +69,24 @@ ${resumeText}
   try {
     console.log("[parseResume] About to call generateText...");
     console.log("[parseResume] generateText type:", typeof generateText);
+    console.log("[parseResume] generateText is function:", typeof generateText === 'function');
 
     let aiText: string = "";
     try {
       console.log("[parseResume] Calling generateText with prompt length:", prompt.length);
       const aiResponse = await generateText(prompt);
+      console.log("[parseResume] generateText call completed");
+      console.log("[parseResume] aiResponse type:", typeof aiResponse);
+      console.log("[parseResume] aiResponse is null/undefined:", aiResponse == null);
 
       if (typeof aiResponse === "string") {
+        console.log("[parseResume] aiResponse is string");
         aiText = aiResponse;
       } else if (aiResponse && typeof aiResponse === "object") {
+        console.log("[parseResume] aiResponse is object, keys:", Object.keys(aiResponse));
         aiText = (aiResponse as any).text || (aiResponse as any).content || JSON.stringify(aiResponse);
       } else {
+        console.log("[parseResume] aiResponse is neither string nor object");
         aiText = String(aiResponse || "");
       }
 
@@ -119,14 +128,23 @@ ${resumeText}
     }
 
     console.log("[parseResume] About to validate with zod...");
+    console.log("[parseResume] Parsed object:", JSON.stringify(parsed, null, 2).slice(0, 500));
     const validated = resumeSchema.safeParse(parsed);
     if (!validated.success) {
       console.error("[parseResume] Parsed JSON failed schema validation:", validated.error);
       console.error("[parseResume] Parsed object keys:", Object.keys(parsed || {}));
+      console.error("[parseResume] validation.error.issues:", JSON.stringify(validated.error.issues, null, 2));
       throw new Error("Parsed resume does not match expected schema");
     }
 
-    console.log("[parseResume] Validation succeeded!");
+    console.log("[parseResume] === VALIDATION SUCCEEDED ===");
+    console.log("[parseResume] Returning validated data with:");
+    console.log("[parseResume] - experience count:", validated.data.experience.length);
+    console.log("[parseResume] - skills count:", validated.data.skills.length);
+    console.log("[parseResume] - certifications count:", validated.data.certifications.length);
+    console.log("[parseResume] - tools count:", validated.data.tools.length);
+    console.log("[parseResume] - projects count:", validated.data.projects.length);
+    console.log("[parseResume] === END PARSE FUNCTION ===");
     return validated.data as ResumeData;
   } catch (err: any) {
     console.error("[parseResume] Error parsing resume with generateText:", err?.message ?? err, err?.stack ?? err);
