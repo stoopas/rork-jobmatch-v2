@@ -50,17 +50,34 @@ export async function parseResumeText(resumeText: string): Promise<ResumeData> {
   console.log("[parseResume] Parsing resume with AI via generateText...");
   console.log("[parseResume] Resume text length:", resumeText.length);
 
-  const prompt = `Extract all information from this resume and return ONLY valid JSON that matches the schema:
+  const prompt = `You are a resume parsing expert. Extract all information from this resume and return ONLY valid JSON.
+
+Required JSON schema:
 {
-  "experience": [{ "title": "", "company": "", "startDate": "", "endDate": "", "current": false, "description": "", "achievements": [] }],
-  "skills": [{ "name": "", "category": "" }],
-  "certifications": [{ "name": "", "issuer": "", "date": "" }],
-  "tools": [{ "name": "", "category": "" }],
-  "projects": [{ "title": "", "description": "", "technologies": [""] }],
-  "domainExperience": [""]
+  "experience": [{
+    "title": "Job Title",
+    "company": "Company Name",
+    "startDate": "YYYY-MM",
+    "endDate": "YYYY-MM",
+    "current": false,
+    "description": "Brief job description",
+    "achievements": ["Achievement 1", "Achievement 2"]
+  }],
+  "skills": [{ "name": "Skill Name", "category": "Technical/Soft/Other" }],
+  "certifications": [{ "name": "Cert Name", "issuer": "Issuing Organization", "date": "YYYY-MM" }],
+  "tools": [{ "name": "Tool Name", "category": "Development/Design/Other" }],
+  "projects": [{ "title": "Project Name", "description": "Project description", "technologies": ["Tech1", "Tech2"] }],
+  "domainExperience": ["Industry or domain 1", "Industry or domain 2"]
 }
 
-Be thorough. If a field is missing, return an empty array or sensible defaults. Return ONLY the JSON object — no explanation, no surrounding text, and no markdown fences.
+Instructions:
+- Extract ALL work experience with full details
+- List ALL technical skills and tools separately
+- Identify certifications and educational qualifications
+- Extract project information if present
+- Infer domain experience from job titles and descriptions
+- Be thorough and extract as much information as possible
+- Return ONLY the JSON object with no markdown fences, no explanations, no additional text
 
 Resume text:
 ${resumeText}
@@ -73,8 +90,10 @@ ${resumeText}
 
     let aiText: string = "";
     try {
-      console.log("[parseResume] Calling generateText with prompt length:", prompt.length);
-      const aiResponse = await generateText(prompt);
+      console.log("[parseResume] Calling generateText with messages array format...");
+      const aiResponse = await generateText({
+        messages: [{ role: "user", content: prompt }],
+      });
       console.log("[parseResume] generateText call completed");
       console.log("[parseResume] aiResponse type:", typeof aiResponse);
       console.log("[parseResume] aiResponse is null/undefined:", aiResponse == null);
