@@ -77,7 +77,7 @@ Return only valid JSON, no additional text.`,
       addJobPosting(jobPosting);
 
       router.push({
-        pathname: "/job/fit-score",
+        pathname: "/job/clarify",
         params: { jobId: jobPosting.id },
       });
     } catch (error) {
