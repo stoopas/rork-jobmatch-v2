@@ -96,7 +96,17 @@ Return ONLY valid JSON in this exact format:
         ],
       });
 
-      const parsed = JSON.parse(aiResponse);
+      console.log("[analyzeFit] Raw AI response:", aiResponse?.slice(0, 200));
+
+      let cleanedResponse = typeof aiResponse === "string" ? aiResponse.trim() : String(aiResponse || "").trim();
+      
+      if (cleanedResponse.startsWith("```")) {
+        cleanedResponse = cleanedResponse.replace(/^```(?:json)?\n?/, "").replace(/\n?```$/, "");
+      }
+
+      console.log("[analyzeFit] Cleaned response:", cleanedResponse.slice(0, 200));
+
+      const parsed = JSON.parse(cleanedResponse);
       setFitScore(parsed);
 
       Animated.spring(scoreAnimation, {
@@ -105,8 +115,8 @@ Return ONLY valid JSON in this exact format:
         tension: 20,
         friction: 7,
       }).start();
-    } catch (error) {
-      console.error("Error analyzing fit:", error);
+    } catch (error: any) {
+      console.error("Error analyzing fit:", error?.message ?? error, error?.stack ?? error);
     } finally {
       setIsAnalyzing(false);
     }
