@@ -101,12 +101,30 @@ Return ONLY valid JSON in this exact format:
       let cleanedResponse = typeof aiResponse === "string" ? aiResponse.trim() : String(aiResponse || "").trim();
       
       if (cleanedResponse.startsWith("```")) {
-        cleanedResponse = cleanedResponse.replace(/^```(?:json)?\n?/, "").replace(/\n?```$/, "");
+        cleanedResponse = cleanedResponse.replace(/^```(?:json)?\s*\n?/, "").replace(/\s*\n?```\s*$/g, "").trim();
       }
 
       console.log("[analyzeFit] Cleaned response:", cleanedResponse.slice(0, 200));
 
-      const parsed = JSON.parse(cleanedResponse);
+      let parsed: any = null;
+      try {
+        parsed = JSON.parse(cleanedResponse);
+      } catch {
+        console.error("[analyzeFit] Initial JSON parse failed, attempting to extract JSON...");
+        const jsonMatch = cleanedResponse.match(/\{[\s\S]*\}/m);
+        if (jsonMatch) {
+          try {
+            parsed = JSON.parse(jsonMatch[0]);
+            console.log("[analyzeFit] Successfully extracted and parsed JSON from response");
+          } catch (extractErr) {
+            console.error("[analyzeFit] Failed to parse extracted JSON:", extractErr);
+            throw new Error("Could not extract valid JSON from AI response");
+          }
+        } else {
+          console.error("[analyzeFit] No JSON found in response:", cleanedResponse);
+          throw new Error("AI response does not contain valid JSON");
+        }
+      }
       setFitScore(parsed);
 
       Animated.spring(scoreAnimation, {

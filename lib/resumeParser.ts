@@ -8,7 +8,7 @@ export const resumeSchema = z.object({
       title: z.string(),
       company: z.string(),
       startDate: z.string(),
-      endDate: z.string().nullable().optional(),
+      endDate: z.string().transform(val => val || ""),
       current: z.boolean(),
       description: z.string(),
       achievements: z.array(z.string()),
@@ -50,39 +50,50 @@ export async function parseResumeText(resumeText: string): Promise<ResumeData> {
   console.log("[parseResume] Parsing resume with AI via generateText...");
   console.log("[parseResume] Resume text length:", resumeText.length);
 
-  const prompt = `You are a resume parsing expert. Extract all information from this resume and return ONLY valid JSON.
+  const prompt = `You are a STRICT resume parser.
 
-Required JSON schema:
+Your ONLY source of truth is the resume text provided below.
+
+You MUST follow these rules:
+
+1. You are FORBIDDEN from using any information not explicitly present in the resume text.
+2. Ignore all prior conversations, chat history, user profiles, or external memory.
+3. Do NOT invent, infer, or hallucinate any jobs, companies, dates, skills, tools, projects, domains, or achievements.
+4. If a job, company, skill, tool, project, certification, or domain is not clearly mentioned in the resume text, you MUST NOT include it.
+5. Do NOT guess based on job titles alone. Only include skills/tools/technologies if they are explicitly named in the resume.
+6. If something is missing or ambiguous, return an empty string or empty array for that field.
+7. You MUST return a single JSON object that matches EXACTLY this schema:
+
 {
   "experience": [{
-    "title": "Job Title",
-    "company": "Company Name",
-    "startDate": "YYYY-MM",
-    "endDate": "YYYY-MM or null for current positions",
-    "current": true if this is a current position,
-    "description": "Brief job description",
-    "achievements": ["Achievement 1", "Achievement 2"]
+    "title": "string",
+    "company": "string",
+    "startDate": "string",
+    "endDate": "string (use empty string \"\" for current positions)",
+    "current": boolean,
+    "description": "string",
+    "achievements": ["string"]
   }],
-  "skills": [{ "name": "Skill Name", "category": "Technical/Soft/Other" }],
-  "certifications": [{ "name": "Cert Name", "issuer": "Issuing Organization", "date": "YYYY-MM" }],
-  "tools": [{ "name": "Tool Name", "category": "Development/Design/Other" }],
-  "projects": [{ "title": "Project Name", "description": "Project description", "technologies": ["Tech1", "Tech2"] }],
-  "domainExperience": ["Industry or domain 1", "Industry or domain 2"]
+  "skills": [{ "name": "string", "category": "string" }],
+  "certifications": [{ "name": "string", "issuer": "string", "date": "string" }],
+  "tools": [{ "name": "string", "category": "string" }],
+  "projects": [{ "title": "string", "description": "string", "technologies": ["string"] }],
+  "domainExperience": ["string"]
 }
 
-Instructions:
-- Extract ALL work experience with full details
-- For current positions, set "current": true and "endDate": null
-- For past positions, set "current": false and provide "endDate": "YYYY-MM"
-- List ALL technical skills and tools separately
-- Identify certifications and educational qualifications
-- Extract project information if present
-- Infer domain experience from job titles and descriptions
-- Be thorough and extract as much information as possible
-- Return ONLY the JSON object with no markdown fences, no explanations, no additional text
+JSON REQUIREMENTS:
+- The JSON must be strictly valid and directly parseable by JSON.parse in JavaScript.
+- Do not include comments in the JSON.
+- Do not include undefined or null values - use empty strings or empty arrays instead.
+- For current positions, set "current": true and "endDate": "" (empty string).
+- For past positions, set "current": false and provide "endDate" as a non-empty string.
+- Return ONLY the JSON object - no explanation, no markdown fences, no backticks, no extra text.
 
-Resume text:
+RESUME TEXT (your ONLY source of truth):
+
+<<<RESUME>>>
 ${resumeText}
+<<<END_RESUME>>>
 `;
 
   try {
