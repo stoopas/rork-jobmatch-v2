@@ -121,52 +121,83 @@ export async function parseResumeText(resumeText: string): Promise<ResumeData> {
   console.log("[parseResume] Parsing resume with AI via generateText...");
   console.log("[parseResume] Resume text length:", resumeText.length);
 
-  const prompt = `You are a STRICT resume parser.
+  const prompt = `You are an expert resume parser. Parse the resume text below and extract all information into structured JSON.
 
-Your ONLY source of truth is the resume text provided below.
+**CRITICAL RULES:**
 
-You MUST follow these rules:
+1. ONLY use information that is explicitly written in the resume text below. Do NOT use any external knowledge, prior conversations, or assumptions.
 
-1. You are FORBIDDEN from using any information not explicitly present in the resume text.
-2. Ignore all prior conversations, chat history, user profiles, or external memory.
-3. Do NOT invent, infer, or hallucinate any jobs, companies, dates, skills, tools, projects, domains, or achievements.
-4. If a job, company, skill, tool, project, certification, or domain is not clearly mentioned in the resume text, you MUST NOT include it.
-5. Do NOT guess based on job titles alone. Only include skills/tools/technologies if they are explicitly named in the resume.
-6. If something is missing or ambiguous, you may omit that field or use an empty string/empty array. Do NOT fabricate values.
+2. Extract ALL of the following from the resume:
+   - Work experience (job titles, companies, dates, descriptions, achievements)
+   - Skills (programming languages, frameworks, methodologies, soft skills)
+   - Tools and technologies (software, platforms, tools mentioned)
+   - Certifications (degrees, certificates, licenses)
+   - Projects (personal or professional projects mentioned)
+   - Domain experience (industries, sectors, business areas)
 
-You MUST return a single JSON object with this shape (fields may be omitted if unknown, but when present they must follow this structure):
+3. For skills and tools:
+   - Include ANY technology, tool, framework, language, or skill explicitly mentioned
+   - Include tools mentioned in job descriptions (e.g., "used Python", "worked with AWS")
+   - Categorize appropriately (e.g., "Programming", "Cloud", "Data", "Design", "Management")
+
+4. For experience:
+   - Extract company name, job title, dates (approximate if needed like "2020" or "2020-2022")
+   - Include key responsibilities and achievements
+   - Set "current": true for present/current roles, false otherwise
+   - For current roles, set "endDate": "" (empty string)
+
+5. For dates: Extract in any format mentioned (YYYY, MM/YYYY, Month YYYY, etc.)
+
+6. If a field is truly not mentioned in the resume, use "" (empty string) or [] (empty array)
+
+**OUTPUT FORMAT:**
+
+Return ONLY a valid JSON object with this exact structure:
 
 {
-  "experience": [{
-    "title": "string",
-    "company": "string",
-    "startDate": "string",
-    "endDate": "string",
-    "current": boolean,
-    "description": "string",
-    "achievements": ["string"]
-  }],
-  "skills": [{ "name": "string", "category": "string" }],
-  "certifications": [{ "name": "string", "issuer": "string", "date": "string" }],
-  "tools": [{ "name": "string", "category": "string" }],
-  "projects": [{ "title": "string", "description": "string", "technologies": ["string"] }],
-  "domainExperience": ["string"]
+  "experience": [
+    {
+      "title": "Job Title",
+      "company": "Company Name",
+      "startDate": "2020-01",
+      "endDate": "2022-06",
+      "current": false,
+      "description": "Brief summary of role",
+      "achievements": ["Achievement 1", "Achievement 2"]
+    }
+  ],
+  "skills": [
+    { "name": "JavaScript", "category": "Programming" },
+    { "name": "Project Management", "category": "Management" }
+  ],
+  "certifications": [
+    { "name": "Certification Name", "issuer": "Issuing Organization", "date": "2021" }
+  ],
+  "tools": [
+    { "name": "VS Code", "category": "Development" },
+    { "name": "AWS", "category": "Cloud" }
+  ],
+  "projects": [
+    {
+      "title": "Project Name",
+      "description": "Project description",
+      "technologies": ["React", "Node.js"]
+    }
+  ],
+  "domainExperience": ["E-commerce", "FinTech", "Healthcare"]
 }
 
-JSON REQUIREMENTS:
-- The JSON must be strictly valid and directly parseable by JSON.parse in JavaScript.
-- Do not include comments in the JSON.
-- Do not include undefined or null values - use empty strings or empty arrays instead.
-- For current positions, set "current": true and "endDate": "" (empty string).
-- For past positions, set "current": false and provide "endDate" as a non-empty string.
-- If you are unsure about a field, omit that field or set it to an empty string/empty array.
-- Return ONLY the JSON object - no explanation, no markdown fences, no backticks, no extra text.
+**IMPORTANT:**
+- Return ONLY the JSON object
+- No markdown code fences (no \`\`\`json)
+- No explanations before or after
+- No comments in the JSON
+- Ensure all strings are properly escaped
+- Do NOT include null or undefined values
 
-RESUME TEXT (your ONLY source of truth):
+**RESUME TEXT:**
 
-<<<RESUME>>>
 ${resumeText}
-<<<END_RESUME>>>
 `;
 
   try {
