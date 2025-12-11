@@ -2,48 +2,119 @@ import { Alert } from "react-native";
 import { generateText } from "@rork-ai/toolkit-sdk";
 import { z } from "zod";
 
+const experienceItemSchema = z.object({
+  title: z.string().min(1),
+  company: z.string().min(1),
+  startDate: z.string().optional().default(""),
+  endDate: z.string().optional().default(""),
+  current: z.boolean().optional().default(false),
+  description: z.string().optional().default(""),
+  achievements: z.array(z.string()).optional().default([]),
+});
+
+const skillItemSchema = z.object({
+  name: z.string().min(1),
+  category: z.string().optional().default("General"),
+});
+
+const certificationItemSchema = z.object({
+  name: z.string().min(1),
+  issuer: z.string().optional().default(""),
+  date: z.string().optional().default(""),
+});
+
+const toolItemSchema = z.object({
+  name: z.string().min(1),
+  category: z.string().optional().default("General"),
+});
+
+const projectItemSchema = z.object({
+  title: z.string().min(1),
+  description: z.string().optional().default(""),
+  technologies: z.array(z.string()).optional().default([]),
+});
+
 export const resumeSchema = z.object({
-  experience: z.array(
-    z.object({
-      title: z.string(),
-      company: z.string(),
-      startDate: z.string(),
-      endDate: z.string().transform(val => val || ""),
-      current: z.boolean(),
-      description: z.string(),
-      achievements: z.array(z.string()),
-    })
-  ),
-  skills: z.array(
-    z.object({
-      name: z.string(),
-      category: z.string(),
-    })
-  ),
-  certifications: z.array(
-    z.object({
-      name: z.string(),
-      issuer: z.string(),
-      date: z.string(),
-    })
-  ),
-  tools: z.array(
-    z.object({
-      name: z.string(),
-      category: z.string(),
-    })
-  ),
-  projects: z.array(
-    z.object({
-      title: z.string(),
-      description: z.string(),
-      technologies: z.array(z.string()),
-    })
-  ),
-  domainExperience: z.array(z.string()),
+  experience: z.array(experienceItemSchema).optional().default([]),
+  skills: z.array(skillItemSchema).optional().default([]),
+  certifications: z.array(certificationItemSchema).optional().default([]),
+  tools: z.array(toolItemSchema).optional().default([]),
+  projects: z.array(projectItemSchema).optional().default([]),
+  domainExperience: z.array(z.string()).optional().default([]),
 });
 
 export type ResumeData = z.infer<typeof resumeSchema>;
+
+function coerceResumeData(raw: any): ResumeData {
+  console.log("[coerceResumeData] Starting coercion...");
+  const safeArray = (value: any) => (Array.isArray(value) ? value : []);
+
+  const experience = safeArray(raw?.experience)
+    .map((item: any) => ({
+      title: String(item?.title || "").trim(),
+      company: String(item?.company || "").trim(),
+      startDate: String(item?.startDate || ""),
+      endDate: String(item?.endDate || ""),
+      current: typeof item?.current === "boolean" ? item.current : false,
+      description: String(item?.description || ""),
+      achievements: safeArray(item?.achievements).map((a: any) => String(a || "")),
+    }))
+    .filter((item: any) => item.title && item.company);
+  console.log("[coerceResumeData] Coerced experience count:", experience.length);
+
+  const skills = safeArray(raw?.skills)
+    .map((item: any) => ({
+      name: String(item?.name || "").trim(),
+      category: String(item?.category || "General").trim(),
+    }))
+    .filter((item: any) => item.name);
+  console.log("[coerceResumeData] Coerced skills count:", skills.length);
+
+  const certifications = safeArray(raw?.certifications)
+    .map((item: any) => ({
+      name: String(item?.name || "").trim(),
+      issuer: String(item?.issuer || ""),
+      date: String(item?.date || ""),
+    }))
+    .filter((item: any) => item.name);
+  console.log("[coerceResumeData] Coerced certifications count:", certifications.length);
+
+  const tools = safeArray(raw?.tools)
+    .map((item: any) => ({
+      name: String(item?.name || "").trim(),
+      category: String(item?.category || "General").trim(),
+    }))
+    .filter((item: any) => item.name);
+  console.log("[coerceResumeData] Coerced tools count:", tools.length);
+
+  const projects = safeArray(raw?.projects)
+    .map((item: any) => ({
+      title: String(item?.title || "").trim(),
+      description: String(item?.description || ""),
+      technologies: safeArray(item?.technologies).map((t: any) => String(t || "")),
+    }))
+    .filter((item: any) => item.title);
+  console.log("[coerceResumeData] Coerced projects count:", projects.length);
+
+  const domainExperience = safeArray(raw?.domainExperience)
+    .map((d: any) => String(d || ""))
+    .filter((d: string) => !!d);
+  console.log("[coerceResumeData] Coerced domain experience count:", domainExperience.length);
+
+  const candidate = {
+    experience,
+    skills,
+    certifications,
+    tools,
+    projects,
+    domainExperience,
+  };
+
+  console.log("[coerceResumeData] Final validation with resumeSchema.parse...");
+  const final = resumeSchema.parse(candidate);
+  console.log("[coerceResumeData] Coercion succeeded");
+  return final;
+}
 
 export async function parseResumeText(resumeText: string): Promise<ResumeData> {
   console.log("[parseResume] === START PARSE FUNCTION ===");
@@ -61,15 +132,16 @@ You MUST follow these rules:
 3. Do NOT invent, infer, or hallucinate any jobs, companies, dates, skills, tools, projects, domains, or achievements.
 4. If a job, company, skill, tool, project, certification, or domain is not clearly mentioned in the resume text, you MUST NOT include it.
 5. Do NOT guess based on job titles alone. Only include skills/tools/technologies if they are explicitly named in the resume.
-6. If something is missing or ambiguous, return an empty string or empty array for that field.
-7. You MUST return a single JSON object that matches EXACTLY this schema:
+6. If something is missing or ambiguous, you may omit that field or use an empty string/empty array. Do NOT fabricate values.
+
+You MUST return a single JSON object with this shape (fields may be omitted if unknown, but when present they must follow this structure):
 
 {
   "experience": [{
     "title": "string",
     "company": "string",
     "startDate": "string",
-    "endDate": "string (use empty string \"\" for current positions)",
+    "endDate": "string",
     "current": boolean,
     "description": "string",
     "achievements": ["string"]
@@ -87,6 +159,7 @@ JSON REQUIREMENTS:
 - Do not include undefined or null values - use empty strings or empty arrays instead.
 - For current positions, set "current": true and "endDate": "" (empty string).
 - For past positions, set "current": false and provide "endDate" as a non-empty string.
+- If you are unsure about a field, omit that field or set it to an empty string/empty array.
 - Return ONLY the JSON object - no explanation, no markdown fences, no backticks, no extra text.
 
 RESUME TEXT (your ONLY source of truth):
@@ -166,7 +239,23 @@ ${resumeText}
       console.error("[parseResume] Parsed JSON failed schema validation:", validated.error);
       console.error("[parseResume] Parsed object keys:", Object.keys(parsed || {}));
       console.error("[parseResume] validation.error.issues:", JSON.stringify(validated.error.issues, null, 2));
-      throw new Error("Parsed resume does not match expected schema");
+
+      console.log("[parseResume] Attempting to coerce parsed data into ResumeData...");
+      try {
+        const coerced = coerceResumeData(parsed);
+        console.log("[parseResume] Coercion succeeded with:", {
+          experienceCount: coerced.experience.length,
+          skillsCount: coerced.skills.length,
+          toolsCount: coerced.tools.length,
+          certificationsCount: coerced.certifications.length,
+          projectsCount: coerced.projects.length,
+        });
+        console.log("[parseResume] === END PARSE FUNCTION WITH COERCED DATA ===");
+        return coerced;
+      } catch (coerceErr) {
+        console.error("[parseResume] Coercion also failed:", coerceErr);
+        throw new Error("Parsed resume does not match expected schema and coercion failed");
+      }
     }
 
     console.log("[parseResume] === VALIDATION SUCCEEDED ===");
