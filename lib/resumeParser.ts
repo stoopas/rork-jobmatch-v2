@@ -1,6 +1,7 @@
 import { Alert } from "react-native";
 import { generateText } from "@rork-ai/toolkit-sdk";
 import { z } from "zod";
+import { parseResumeText as fallbackParseResumeText, validateParsedResume } from "../parsers/resume-parser";
 
 const experienceItemSchema = z.object({
   title: z.string().min(1),
@@ -121,84 +122,79 @@ export async function parseResumeText(resumeText: string): Promise<ResumeData> {
   console.log("[parseResume] Parsing resume with AI via generateText...");
   console.log("[parseResume] Resume text length:", resumeText.length);
 
-  const prompt = `You are an expert resume parser. Parse the resume text below and extract all information into structured JSON.
+  const prompt = `You are a STRICT and THOROUGH resume parser.
 
-**CRITICAL RULES:**
+Your ONLY source of truth is the resume text provided below. You MUST NOT use any external memory, prior chats, or assumptions beyond this text.
 
-1. ONLY use information that is explicitly written in the resume text below. Do NOT use any external knowledge, prior conversations, or assumptions.
+YOUR JOB:
+Carefully read the resume and extract AS MUCH structured information as you reliably can, without guessing about things that are not present.
 
-2. Extract ALL of the following from the resume:
-   - Work experience (job titles, companies, dates, descriptions, achievements)
-   - Skills (programming languages, frameworks, methodologies, soft skills)
-   - Tools and technologies (software, platforms, tools mentioned)
-   - Certifications (degrees, certificates, licenses)
-   - Projects (personal or professional projects mentioned)
-   - Domain experience (industries, sectors, business areas)
+RULES ABOUT SOURCE OF TRUTH:
+1. You are FORBIDDEN from using any information not explicitly present in the resume text.
+2. Ignore all prior conversations, chat history, user profiles, or external memory.
+3. Do NOT invent, infer, or hallucinate any jobs, companies, dates, skills, tools, projects, domains, or achievements that are not clearly supported by the resume text.
 
-3. For skills and tools:
-   - Include ANY technology, tool, framework, language, or skill explicitly mentioned
-   - Include tools mentioned in job descriptions (e.g., "used Python", "worked with AWS")
-   - Categorize appropriately (e.g., "Programming", "Cloud", "Data", "Design", "Management")
+RULES ABOUT EXTRACTION QUALITY:
+4. Be AGGRESSIVE in extracting real information from the resume:
+   - Identify WORK EXPERIENCE sections (e.g., headings like "Experience", "Work History", "Professional Experience").
+   - For each job, extract:
+     - "title" (job title)
+     - "company" (employer)
+     - "startDate" and "endDate" (years or month+year when visible)
+     - "current" (true if clearly marked as present/current; otherwise false)
+     - "description" (short summary of the role)
+     - "achievements" (a list of bullet points or key accomplishments for that role).
+   - Identify SKILLS sections ("Skills", "Technical Skills", etc.) and extract each listed skill as a separate item.
+   - Identify TOOLS/TECHNOLOGIES mentioned throughout the resume (especially in skills and experience bullets) and list them in "tools".
+   - Identify PROJECTS sections (or clearly described project work) and extract project entries.
+   - Identify DOMAIN EXPERIENCE (industries, verticals, or business domains such as "Fintech", "Healthcare", "E-commerce", "Airlines", etc.).
 
-4. For experience:
-   - Extract company name, job title, dates (approximate if needed like "2020" or "2020-2022")
-   - Include key responsibilities and achievements
-   - Set "current": true for present/current roles, false otherwise
-   - For current roles, set "endDate": "" (empty string)
+5. Do NOT return empty arrays when the resume clearly contains that type of information:
+   - If the resume has job entries, "experience" MUST contain at least one object.
+   - If the resume has a skills section, "skills" MUST contain entries.
+   - If the resume mentions any tools or technologies by name, "tools" MUST contain entries.
+   - If the resume mentions any projects or domain/industry terms, "projects" or "domainExperience" should reflect that.
 
-5. For dates: Extract in any format mentioned (YYYY, MM/YYYY, Month YYYY, etc.)
+6. If some fields of an item are missing (e.g., no end date, no achievements):
+   - Include the item anyway, and use:
+     - Empty strings "" for unknown string fields.
+     - Empty arrays [] for unknown list fields.
+   - OMIT fields only when they truly cannot be inferred from the resume text.
 
-6. If a field is truly not mentioned in the resume, use "" (empty string) or [] (empty array)
+OUTPUT SCHEMA:
 
-**OUTPUT FORMAT:**
-
-Return ONLY a valid JSON object with this exact structure:
+You MUST return a single JSON object with this shape (fields may be omitted if unknown, but when present they must follow this structure):
 
 {
-  "experience": [
-    {
-      "title": "Job Title",
-      "company": "Company Name",
-      "startDate": "2020-01",
-      "endDate": "2022-06",
-      "current": false,
-      "description": "Brief summary of role",
-      "achievements": ["Achievement 1", "Achievement 2"]
-    }
-  ],
-  "skills": [
-    { "name": "JavaScript", "category": "Programming" },
-    { "name": "Project Management", "category": "Management" }
-  ],
-  "certifications": [
-    { "name": "Certification Name", "issuer": "Issuing Organization", "date": "2021" }
-  ],
-  "tools": [
-    { "name": "VS Code", "category": "Development" },
-    { "name": "AWS", "category": "Cloud" }
-  ],
-  "projects": [
-    {
-      "title": "Project Name",
-      "description": "Project description",
-      "technologies": ["React", "Node.js"]
-    }
-  ],
-  "domainExperience": ["E-commerce", "FinTech", "Healthcare"]
+  "experience": [{
+    "title": "string",
+    "company": "string",
+    "startDate": "string",
+    "endDate": "string",
+    "current": boolean,
+    "description": "string",
+    "achievements": ["string"]
+  }],
+  "skills": [{ "name": "string", "category": "string" }],
+  "certifications": [{ "name": "string", "issuer": "string", "date": "string" }],
+  "tools": [{ "name": "string", "category": "string" }],
+  "projects": [{ "title": "string", "description": "string", "technologies": ["string"] }],
+  "domainExperience": ["string"]
 }
 
-**IMPORTANT:**
-- Return ONLY the JSON object
-- No markdown code fences (no \`\`\`json)
-- No explanations before or after
-- No comments in the JSON
-- Ensure all strings are properly escaped
-- Do NOT include null or undefined values
+JSON REQUIREMENTS:
+- The JSON must be strictly valid and directly parseable by JSON.parse in JavaScript.
+- Do NOT include comments in the JSON.
+- Do NOT include undefined or null values; use empty strings "" or empty arrays [] instead.
+- For current positions, set "current": true and "endDate": "" (empty string).
+- For past positions, set "current": false and provide a non-empty "endDate" if it appears in the text.
+- Return ONLY the JSON object — no explanation, no markdown fences, no backticks, and no extra text.
 
-**RESUME TEXT:**
+RESUME TEXT (your ONLY source of truth):
 
+<<<RESUME>>>
 ${resumeText}
-`;
+<<<END_RESUME>>>`;
 
   try {
     console.log("[parseResume] About to call generateText...");
@@ -296,11 +292,61 @@ ${resumeText}
     console.log("[parseResume] - certifications count:", validated.data.certifications.length);
     console.log("[parseResume] - tools count:", validated.data.tools.length);
     console.log("[parseResume] - projects count:", validated.data.projects.length);
+
+    const data = validated.data;
+
+    const isNonTrivialResume = resumeText.trim().length > 400;
+    const nothingExtracted =
+      data.experience.length === 0 &&
+      data.skills.length === 0 &&
+      data.tools.length === 0 &&
+      data.certifications.length === 0 &&
+      data.projects.length === 0 &&
+      data.domainExperience.length === 0;
+
+    if (isNonTrivialResume && nothingExtracted) {
+      console.error("[parseResume] Sanity check failed: resume text is non-trivial but no data was extracted");
+      console.error("[parseResume] Resume text preview (first 500 chars):", resumeText.slice(0, 500));
+      throw new Error("AI failed to extract any structured data from this resume");
+    }
+
     console.log("[parseResume] === END PARSE FUNCTION ===");
-    return validated.data as ResumeData;
+    return data as ResumeData;
   } catch (err: any) {
     console.error("[parseResume] Error parsing resume with generateText:", err?.message ?? err, err?.stack ?? err);
-    throw err;
+    
+    console.warn("[parseResume] AI-based parsing failed or returned no data, falling back to heuristic parser...");
+    try {
+      const fallbackRaw = fallbackParseResumeText(resumeText);
+      
+      if (!validateParsedResume(fallbackRaw)) {
+        console.error("[parseResume] Fallback parser also failed to extract meaningful data");
+        throw new Error("Could not extract any structured data from resume");
+      }
+
+      console.log("[parseResume] Fallback parser returned data, coercing to ResumeData format...");
+      const fallbackRawAny = fallbackRaw as any;
+      const fallbackCandidate = {
+        experience: Array.isArray(fallbackRawAny.experience) ? fallbackRawAny.experience : [],
+        skills: Array.isArray(fallbackRawAny.skills) ? fallbackRawAny.skills : [],
+        certifications: Array.isArray(fallbackRawAny.certifications) ? fallbackRawAny.certifications : [],
+        tools: Array.isArray(fallbackRawAny.tools) ? fallbackRawAny.tools : [],
+        projects: Array.isArray(fallbackRawAny.projects) ? fallbackRawAny.projects : [],
+        domainExperience: Array.isArray(fallbackRawAny.domainExperience) ? fallbackRawAny.domainExperience : [],
+      };
+
+      const finalData = resumeSchema.parse(fallbackCandidate);
+      console.log("[parseResume] Fallback parser succeeded with:", {
+        experienceCount: finalData.experience.length,
+        skillsCount: finalData.skills.length,
+        toolsCount: finalData.tools.length,
+      });
+      console.log("[parseResume] === END PARSE FUNCTION (FALLBACK) ===");
+      return finalData;
+    } catch (fallbackErr: any) {
+      console.error("[parseResume] Fallback parser also failed:", fallbackErr?.message ?? fallbackErr);
+      throw new Error(err?.message || "Failed to parse resume. Please try again or add information manually.");
+    }
   }
 }
 
