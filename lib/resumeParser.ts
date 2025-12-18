@@ -193,8 +193,20 @@ ${input}
   });
 
   console.log("[parseResume] Running verification against resume source...");
-  const resumeTextForVerification = isFile ? "" : (input as string);
-  const verified = isFile ? validated : verifyAndCleanResumeExtraction(resumeTextForVerification, validated);
+  
+  let resumeTextForVerification: string;
+  if (isFile) {
+    console.error("[parseResume] CRITICAL BUG: File-based parsing is bypassing verification");
+    console.error("[parseResume] The AI received binary/metadata, not extracted text");
+    console.error("[parseResume] This allows hallucinations from PDF metadata to pass through");
+    throw new Error(
+      "PDF/DOCX parsing is currently disabled due to a critical bug. Please upload your resume as a plain text (.txt) file, or copy-paste the content in the chat."
+    );
+  } else {
+    resumeTextForVerification = input as string;
+  }
+  
+  const verified = verifyAndCleanResumeExtraction(resumeTextForVerification, validated);
 
   const isNonTrivialResume = isFile || (typeof input === 'string' && input.trim().length > 400);
   const nothingExtracted =

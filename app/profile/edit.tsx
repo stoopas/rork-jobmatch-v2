@@ -396,13 +396,12 @@ export default function EditProfileScreen() {
       const isDoc = mimeType.includes('msword') || fileName.toLowerCase().endsWith('.doc');
 
       if (isPDF || isDocx || isDoc) {
-        console.log("[handleUpload] Detected structured document format, passing to AI for extraction");
-        try {
-          await parseResumeAsync({ uri, mimeType, name: fileName });
-        } catch (err: any) {
-          console.error("[handleUpload] parseResumeAsync error:", err?.message ?? err, err?.stack ?? err);
-          Alert.alert("Error", err?.message ? `Failed to parse resume: ${err.message}` : "Failed to parse resume. Please try again.");
-        }
+        console.log("[handleUpload] Detected structured document format (PDF/DOCX)");
+        Alert.alert(
+          "PDF/DOCX Not Supported",
+          "PDF and Word document parsing is temporarily disabled.\n\nPlease either:\n1. Save your resume as a .txt file and upload it\n2. Copy-paste your resume content in the chat\n\nWe're working on proper document extraction to prevent data corruption.",
+          [{ text: "OK" }]
+        );
         return;
       }
 
