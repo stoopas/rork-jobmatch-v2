@@ -100,7 +100,7 @@ export async function readFileAsText(uri) {
 export async function readFileAsBase64(uri) {
   try {
     const content = await FileSystem.readAsStringAsync(uri, {
-      encoding: FileSystem.EncodingType.Base64,
+      encoding: 'base64',
     });
     return content;
   } catch (error) {
