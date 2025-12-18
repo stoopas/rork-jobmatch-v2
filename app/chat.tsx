@@ -393,8 +393,10 @@ IMPORTANT: ALWAYS end questions with [Options: choice1 | choice2 | ...] format.
       console.log("[handleUpload] Extracting text from file...");
       let extracted;
       try {
-        extracted = await extractResumeText(file.uri, file.name);
+        const mimeType = file.mimeType || (file as any).type;
+        extracted = await extractResumeText(file.uri, file.name, mimeType);
         console.log("[handleUpload] Text extracted successfully, length:", extracted.text.length);
+        console.log("[handleUpload] Extraction source:", extracted.source);
       } catch (extractErr: any) {
         console.error("[handleUpload] Text extraction failed:", extractErr?.message);
         Alert.alert("Error", extractErr?.message || "Could not extract text from file.");

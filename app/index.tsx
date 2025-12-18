@@ -122,8 +122,10 @@ export default function HomeScreen() {
       console.log("[onboarding] Extracting text from file...");
       let extracted;
       try {
-        extracted = await extractResumeText(file.uri, file.name);
+        const mimeType = file.mimeType || (file as any).type;
+        extracted = await extractResumeText(file.uri, file.name, mimeType);
         console.log("[onboarding] Text extracted successfully, length:", extracted.text.length);
+        console.log("[onboarding] Extraction source:", extracted.source);
       } catch (extractErr: any) {
         console.error("[onboarding] Text extraction failed:", extractErr?.message);
         Alert.alert("Error", extractErr?.message || "Could not extract text from file.");

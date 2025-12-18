@@ -387,13 +387,15 @@ export default function EditProfileScreen() {
 
       const fileAsset = (result as any).assets?.[0] || result;
       const fileName = fileAsset.name || uri.split('/').pop() || 'resume';
-      console.log("[handleUpload] File info:", { fileName, uri });
+      const mimeType = fileAsset.mimeType || fileAsset.type;
+      console.log("[handleUpload] File info:", { fileName, uri, mimeType });
 
       console.log("[handleUpload] Extracting text from file...");
       let extracted;
       try {
-        extracted = await extractResumeText(uri, fileName);
+        extracted = await extractResumeText(uri, fileName, mimeType);
         console.log("[handleUpload] Text extracted successfully, length:", extracted.text.length);
+        console.log("[handleUpload] Extraction source:", extracted.source);
       } catch (extractErr: any) {
         console.error("[handleUpload] Text extraction failed:", extractErr?.message);
         Alert.alert("Error", extractErr?.message || "Could not extract text from file.");
