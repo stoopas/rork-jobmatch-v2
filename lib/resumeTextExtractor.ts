@@ -1,4 +1,5 @@
 import * as FileSystem from "expo-file-system/legacy";
+import { Platform } from "react-native";
 
 export type ExtractedResumeText = {
   text: string;
@@ -144,17 +145,31 @@ async function extractPDFViaServer(uri: string): Promise<string> {
 
 async function extractDOCXLocally(uri: string): Promise<string> {
   console.log("[extractDOCX] Starting local DOCX extraction...");
+  console.log("[extractDOCX] Platform:", Platform.OS);
   
   try {
     const mammoth = await import("mammoth");
+    let arrayBuffer: ArrayBuffer;
     
-    const base64 = await FileSystem.readAsStringAsync(uri, {
-      encoding: "base64" as any,
-    });
-    
-    console.log("[extractDOCX] Read file as base64, length:", base64.length);
-    
-    const arrayBuffer = Uint8Array.from(atob(base64), c => c.charCodeAt(0)).buffer;
+    if (Platform.OS === 'web') {
+      console.log("[extractDOCX] Using web File API");
+      
+      const response = await fetch(uri);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch file: ${response.statusText}`);
+      }
+      arrayBuffer = await response.arrayBuffer();
+      console.log("[extractDOCX] Fetched file as ArrayBuffer, size:", arrayBuffer.byteLength);
+    } else {
+      console.log("[extractDOCX] Using expo-file-system");
+      
+      const base64 = await FileSystem.readAsStringAsync(uri, {
+        encoding: "base64" as any,
+      });
+      
+      console.log("[extractDOCX] Read file as base64, length:", base64.length);
+      arrayBuffer = Uint8Array.from(atob(base64), c => c.charCodeAt(0)).buffer;
+    }
     
     console.log("[extractDOCX] Converted to ArrayBuffer, calling mammoth...");
     const result = await mammoth.default.extractRawText({ arrayBuffer });
@@ -195,9 +210,23 @@ async function extractDOCXLocally(uri: string): Promise<string> {
 
 async function extractTXTLocally(uri: string): Promise<string> {
   console.log("[extractTXT] Reading plain text file...");
+  console.log("[extractTXT] Platform:", Platform.OS);
   
   try {
-    const content = await FileSystem.readAsStringAsync(uri, { encoding: "utf8" });
+    let content: string;
+    
+    if (Platform.OS === 'web') {
+      console.log("[extractTXT] Using web fetch API");
+      const response = await fetch(uri);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch file: ${response.statusText}`);
+      }
+      content = await response.text();
+    } else {
+      console.log("[extractTXT] Using expo-file-system");
+      content = await FileSystem.readAsStringAsync(uri, { encoding: "utf8" });
+    }
+    
     console.log("[extractTXT] Read succeeded, length:", content.length);
     
     if (!content || content.trim().length === 0) {
