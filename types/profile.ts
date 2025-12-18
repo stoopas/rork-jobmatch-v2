@@ -42,6 +42,17 @@ export interface Project {
   url?: string;
 }
 
+export interface ResumeAsset {
+  id: string;
+  name: string;
+  uri: string;
+  mimeType?: string;
+  uploadedAt: string;
+  type: "pdf" | "docx" | "txt" | "unknown";
+  extractedText?: string;
+  docxBase64?: string;
+}
+
 export interface UserProfile {
   experience: Experience[];
   skills: Skill[];
@@ -56,6 +67,7 @@ export interface UserProfile {
   workStyles: string[];
   preferences: Record<string, string>;
   resumeBullets: string[];
+  resumeAssets: ResumeAsset[];
 }
 
 export interface QAItem {

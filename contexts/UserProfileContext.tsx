@@ -3,7 +3,7 @@ import createContextHook from "@nkzw/create-context-hook";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-import type { UserProfile, QAItem, JobPosting, Skill, Tool, ClarifyingAnswer } from "../types/profile";
+import type { UserProfile, QAItem, JobPosting, Skill, Tool, ClarifyingAnswer, ResumeAsset } from "../types/profile";
 
 const PROFILE_KEY = "user_profile";
 const QA_HISTORY_KEY = "qa_history";
@@ -23,6 +23,7 @@ const initialProfile: UserProfile = {
   workStyles: [],
   preferences: {},
   resumeBullets: [],
+  resumeAssets: [],
 };
 
 export const [UserProfileProvider, useUserProfile] = createContextHook(() => {
@@ -232,6 +233,36 @@ export const [UserProfileProvider, useUserProfile] = createContextHook(() => {
     return profile.experience.length > 0 && profile.skills.length > 0;
   }, [profile.experience.length, profile.skills.length]);
 
+  const addResumeAsset = useCallback(
+    async (asset: ResumeAsset) => {
+      const updated = [...profile.resumeAssets, asset];
+      await updateProfile({ resumeAssets: updated });
+    },
+    [profile.resumeAssets, updateProfile]
+  );
+
+  const removeResumeAsset = useCallback(
+    async (id: string) => {
+      const updated = profile.resumeAssets.filter((a) => a.id !== id);
+      await updateProfile({ resumeAssets: updated });
+    },
+    [profile.resumeAssets, updateProfile]
+  );
+
+  const getResumeAssets = useCallback((): ResumeAsset[] => {
+    return profile.resumeAssets || [];
+  }, [profile.resumeAssets]);
+
+  const updateResumeAsset = useCallback(
+    async (id: string, patch: Partial<ResumeAsset>) => {
+      const updated = profile.resumeAssets.map((a) =>
+        a.id === id ? { ...a, ...patch } : a
+      );
+      await updateProfile({ resumeAssets: updated });
+    },
+    [profile.resumeAssets, updateProfile]
+  );
+
   return useMemo(
     () => ({
       profile,
@@ -246,6 +277,10 @@ export const [UserProfileProvider, useUserProfile] = createContextHook(() => {
       recordClarifyingAnswer,
       hasClarificationFor,
       isProfileComplete,
+      addResumeAsset,
+      removeResumeAsset,
+      getResumeAssets,
+      updateResumeAsset,
       isLoading:
         profileQuery.isLoading || qaQuery.isLoading || jobsQuery.isLoading,
       isSaving: isSavingProfile || isSavingQA || isSavingJobs,
@@ -263,6 +298,10 @@ export const [UserProfileProvider, useUserProfile] = createContextHook(() => {
       recordClarifyingAnswer,
       hasClarificationFor,
       isProfileComplete,
+      addResumeAsset,
+      removeResumeAsset,
+      getResumeAssets,
+      updateResumeAsset,
       profileQuery.isLoading,
       qaQuery.isLoading,
       jobsQuery.isLoading,

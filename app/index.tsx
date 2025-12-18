@@ -19,7 +19,7 @@ import { useUserProfile } from "../contexts/UserProfileContext";
 import { parseResumeText, showParseSuccessAlert, type ResumeData } from "../lib/resumeParser";
 
 export default function HomeScreen() {
-  const { profile, updateProfile, isProfileComplete } = useUserProfile();
+  const { profile, updateProfile, isProfileComplete, addResumeAsset } = useUserProfile();
   const [isOnboarding, setIsOnboarding] = useState(false);
 
   const hasProfile = isProfileComplete();
@@ -132,6 +132,23 @@ export default function HomeScreen() {
         setIsOnboarding(false);
         return;
       }
+
+      console.log("[onboarding] Saving resume as asset...");
+      const mimeType = file.mimeType || (file as any).type;
+      const fileType = file.name?.endsWith(".pdf") ? "pdf" : file.name?.endsWith(".docx") ? "docx" : file.name?.endsWith(".txt") ? "txt" : "unknown";
+      const resumeAsset = {
+        id: Date.now().toString() + Math.random(),
+        name: file.name || "resume",
+        uri: file.uri,
+        mimeType: mimeType,
+        uploadedAt: new Date().toISOString(),
+        type: fileType as "pdf" | "docx" | "txt" | "unknown",
+        extractedText: extracted.text,
+        docxBase64: extracted.docxBase64,
+      };
+
+      await addResumeAsset(resumeAsset);
+      console.log("[onboarding] Resume asset saved with ID:", resumeAsset.id);
 
       try {
         await parseResumeAsync(extracted.text);

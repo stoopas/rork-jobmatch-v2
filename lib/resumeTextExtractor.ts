@@ -4,6 +4,7 @@ import { Platform } from "react-native";
 export type ExtractedResumeText = {
   text: string;
   source: "local_docx" | "local_txt" | "remote_pdf";
+  docxBase64?: string;
 };
 
 export class ResumeExtractionError extends Error {
@@ -143,13 +144,14 @@ async function extractPDFViaServer(uri: string): Promise<string> {
   }
 }
 
-async function extractDOCXLocally(uri: string): Promise<string> {
+async function extractDOCXLocally(uri: string): Promise<{ text: string; base64: string }> {
   console.log("[extractDOCX] Starting local DOCX extraction...");
   console.log("[extractDOCX] Platform:", Platform.OS);
   
   try {
     const mammoth = await import("mammoth");
     let arrayBuffer: ArrayBuffer;
+    let base64: string;
     
     if (Platform.OS === 'web') {
       console.log("[extractDOCX] Using web File API");
@@ -160,10 +162,13 @@ async function extractDOCXLocally(uri: string): Promise<string> {
       }
       arrayBuffer = await response.arrayBuffer();
       console.log("[extractDOCX] Fetched file as ArrayBuffer, size:", arrayBuffer.byteLength);
+      
+      const uint8Array = new Uint8Array(arrayBuffer);
+      base64 = btoa(String.fromCharCode(...uint8Array));
     } else {
       console.log("[extractDOCX] Using expo-file-system");
       
-      const base64 = await FileSystem.readAsStringAsync(uri, {
+      base64 = await FileSystem.readAsStringAsync(uri, {
         encoding: "base64" as any,
       });
       
@@ -196,7 +201,7 @@ async function extractDOCXLocally(uri: string): Promise<string> {
       );
     }
     
-    return cleanedText;
+    return { text: cleanedText, base64 };
   } catch (error: any) {
     console.error("[extractDOCX] Extraction failed:", error);
     if (error instanceof ResumeExtractionError) {
@@ -263,6 +268,8 @@ export async function extractResumeText(
   let text: string;
   let source: ExtractedResumeText["source"];
   
+  let docxBase64: string | undefined;
+  
   switch (fileType) {
     case "pdf":
       text = await extractPDFViaServer(uri);
@@ -270,7 +277,9 @@ export async function extractResumeText(
       break;
       
     case "docx":
-      text = await extractDOCXLocally(uri);
+      const docxResult = await extractDOCXLocally(uri);
+      text = docxResult.text;
+      docxBase64 = docxResult.base64;
       source = "local_docx";
       break;
       
@@ -321,9 +330,10 @@ export async function extractResumeText(
   console.log("[extractResumeText] Extraction complete and validated");
   console.log("[extractResumeText] Source:", source);
   console.log("[extractResumeText] Text length:", text.length);
+  console.log("[extractResumeText] Has docxBase64:", !!docxBase64);
   console.log("[extractResumeText] First 200 chars:", text.slice(0, 200));
   
-  return { text, source };
+  return { text, source, docxBase64 };
 }
 
 export function validateResumeTextBeforeParsing(text: string): void {

@@ -29,6 +29,7 @@ export default function FitScoreScreen() {
   const [fitScore, setFitScore] = useState<FitScore | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(true);
   const [scoreAnimation] = useState(new Animated.Value(0));
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
 
   const job = jobPostings.find((j) => j.id === jobId);
 
@@ -234,13 +235,33 @@ Return ONLY valid JSON in this exact format:
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Detailed Breakdown</Text>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Detailed Breakdown</Text>
+          <TouchableOpacity
+            onPress={() => {
+              const allExpanded = Object.keys(expandedSections).length === 5 && Object.values(expandedSections).every(v => v);
+              setExpandedSections({
+                experience: !allExpanded,
+                technical: !allExpanded,
+                domain: !allExpanded,
+                cultural: !allExpanded,
+                impact: !allExpanded,
+              });
+            }}
+          >
+            <Text style={styles.expandAllText}>
+              {Object.values(expandedSections).every(v => v) ? "Collapse All" : "Expand All"}
+            </Text>
+          </TouchableOpacity>
+        </View>
 
         <ScoreDimension
           icon={<Briefcase size={20} color="#0066FF" />}
           title="Experience Alignment"
           score={fitScore.experienceAlignment}
           rationale={fitScore.rationale.experienceAlignment}
+          expanded={!!expandedSections.experience}
+          onToggle={() => setExpandedSections({ ...expandedSections, experience: !expandedSections.experience })}
         />
 
         <ScoreDimension
@@ -248,6 +269,8 @@ Return ONLY valid JSON in this exact format:
           title="Technical Skill Match"
           score={fitScore.technicalSkillMatch}
           rationale={fitScore.rationale.technicalSkillMatch}
+          expanded={!!expandedSections.technical}
+          onToggle={() => setExpandedSections({ ...expandedSections, technical: !expandedSections.technical })}
         />
 
         <ScoreDimension
@@ -255,6 +278,8 @@ Return ONLY valid JSON in this exact format:
           title="Domain Relevance"
           score={fitScore.domainRelevance}
           rationale={fitScore.rationale.domainRelevance}
+          expanded={!!expandedSections.domain}
+          onToggle={() => setExpandedSections({ ...expandedSections, domain: !expandedSections.domain })}
         />
 
         <ScoreDimension
@@ -262,6 +287,8 @@ Return ONLY valid JSON in this exact format:
           title="Stage/Cultural Fit"
           score={fitScore.stageCulturalFit}
           rationale={fitScore.rationale.stageCulturalFit}
+          expanded={!!expandedSections.cultural}
+          onToggle={() => setExpandedSections({ ...expandedSections, cultural: !expandedSections.cultural })}
         />
 
         <ScoreDimension
@@ -269,6 +296,8 @@ Return ONLY valid JSON in this exact format:
           title="Impact Potential"
           score={fitScore.impactPotential}
           rationale={fitScore.rationale.impactPotential}
+          expanded={!!expandedSections.impact}
+          onToggle={() => setExpandedSections({ ...expandedSections, impact: !expandedSections.impact })}
         />
       </View>
 
@@ -277,7 +306,7 @@ Return ONLY valid JSON in this exact format:
           style={styles.generateButton}
           onPress={() =>
             router.push({
-              pathname: "/resume/generate",
+              pathname: "/resume/options",
               params: { jobId: job.id },
             })
           }
@@ -304,11 +333,15 @@ function ScoreDimension({
   title,
   score,
   rationale,
+  expanded,
+  onToggle,
 }: {
   icon: React.ReactNode;
   title: string;
   score: number;
   rationale: string;
+  expanded: boolean;
+  onToggle: () => void;
 }) {
   const getBarColor = (score: number) => {
     if (score >= 75) return "#10B981";
@@ -317,7 +350,7 @@ function ScoreDimension({
   };
 
   return (
-    <View style={styles.dimensionCard}>
+    <TouchableOpacity style={styles.dimensionCard} onPress={onToggle} activeOpacity={0.7}>
       <View style={styles.dimensionHeader}>
         <View style={styles.dimensionTitleContainer}>
           <View>{icon}</View>
@@ -335,8 +368,17 @@ function ScoreDimension({
           ]}
         />
       </View>
-      <Text style={styles.dimensionRationale}>{rationale}</Text>
-    </View>
+      {expanded && (
+        <View style={styles.rationaleContainer}>
+          <Text style={styles.dimensionRationale}>{rationale}</Text>
+        </View>
+      )}
+      <View style={styles.expandIndicator}>
+        <Text style={styles.expandText}>
+          {expanded ? "Tap to collapse" : "Tap to expand"}
+        </Text>
+      </View>
+    </TouchableOpacity>
   );
 }
 
@@ -454,11 +496,21 @@ const styles = StyleSheet.create({
   section: {
     padding: 24,
   },
+  sectionHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 16,
+  },
   sectionTitle: {
     fontSize: 20,
     fontWeight: "700" as const,
     color: "#1A1A1A",
-    marginBottom: 16,
+  },
+  expandAllText: {
+    fontSize: 14,
+    fontWeight: "600" as const,
+    color: "#0066FF",
   },
   dimensionCard: {
     backgroundColor: "#FFFFFF",
@@ -503,10 +555,25 @@ const styles = StyleSheet.create({
     height: "100%",
     borderRadius: 4,
   },
+  rationaleContainer: {
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: "#F0F0F0",
+  },
   dimensionRationale: {
     fontSize: 14,
     color: "#666666",
     lineHeight: 20,
+  },
+  expandIndicator: {
+    marginTop: 8,
+    alignItems: "center",
+  },
+  expandText: {
+    fontSize: 12,
+    color: "#999999",
+    fontStyle: "italic" as const,
   },
   generateButton: {
     marginHorizontal: 24,
