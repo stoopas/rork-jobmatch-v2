@@ -1,4 +1,6 @@
-import { createRorkTool, useRorkAgent, generateObject } from "@rork-ai/toolkit-sdk";
+import { createRorkTool, useRorkAgent } from "@rork-ai/toolkit-sdk";
+import { parseResumeText, type ResumeData } from "../lib/resumeParser";
+import { normalizeText } from "../lib/sourceOfTruth";
 import * as DocumentPicker from "expo-document-picker";
 import * as FileSystem from "expo-file-system";
 import { Stack } from "expo-router";
@@ -26,46 +28,7 @@ type QuickReply = {
   value: string;
 };
 
-const resumeSchema = z.object({
-    experience: z.array(
-      z.object({
-        title: z.string(),
-        company: z.string(),
-        startDate: z.string(),
-        endDate: z.string().optional(),
-        current: z.boolean(),
-        description: z.string(),
-        achievements: z.array(z.string()),
-      })
-    ),
-    skills: z.array(
-      z.object({
-        name: z.string(),
-        category: z.string(),
-      })
-    ),
-    certifications: z.array(
-      z.object({
-        name: z.string(),
-        issuer: z.string(),
-        date: z.string(),
-      })
-    ),
-    tools: z.array(
-      z.object({
-        name: z.string(),
-        category: z.string(),
-      })
-    ),
-    projects: z.array(
-      z.object({
-        title: z.string(),
-        description: z.string(),
-        technologies: z.array(z.string()),
-      })
-    ),
-    domainExperience: z.array(z.string()),
-  });
+
 
 export default function ChatScreen() {
   const { profile, updateProfile } = useUserProfile();
@@ -79,44 +42,7 @@ export default function ChatScreen() {
 
   const { messages, error, sendMessage, setMessages } = useRorkAgent({
     tools: {
-      storeExperience: createRorkTool({
-        description: "Store work experience details in user profile",
-        zodSchema: z.object({
-          title: z.string().describe("Job title"),
-          company: z.string().describe("Company name"),
-          startDate: z.string().describe("Start date"),
-          endDate: z.string().optional().describe("End date if not current"),
-          current: z.boolean().describe("Currently working here"),
-          description: z.string().describe("Role description"),
-          achievements: z
-            .array(z.string())
-            .describe("Key achievements in this role"),
-        }) as any,
-        execute(input: any) {
-          console.log("[storeExperience] Storing experience:", input);
-          try {
-            updateProfile({
-              experience: [
-                ...profile.experience,
-                {
-                  id: Date.now().toString(),
-                  title: input.title,
-                  company: input.company,
-                  startDate: input.startDate,
-                  endDate: input.endDate,
-                  current: input.current,
-                  description: input.description,
-                  achievements: input.achievements || [],
-                },
-              ],
-            });
-            return "Experience stored successfully";
-          } catch (error) {
-            console.error("[storeExperience] Error:", error);
-            return "Failed to store experience";
-          }
-        },
-      }),
+
       storeSkills: createRorkTool({
         description: "Store multiple skills in user profile",
         zodSchema: z.object({
@@ -488,80 +414,160 @@ IMPORTANT: ALWAYS end questions with [Options: choice1 | choice2 | ...] format.
 
       console.log("[handleUpload] File read successfully, length:", content.length);
 
-      let parsed: any;
+      let parsed: ResumeData;
       try {
-        parsed = await generateObject({
-          messages: [
-            {
-              role: "user",
-              content: `Extract all information from this resume and structure it. Be thorough and extract:
-- All work experience with titles, companies, dates, descriptions, and achievements
-- All skills categorized appropriately
-- All certifications with issuer and dates
-- All tools and technologies used
-- All projects with descriptions and technologies
-- Domain experience areas
-
-Resume text:
-${content}`,
-            },
-          ],
-            schema: resumeSchema as any,
-        });
-      } catch (parseError) {
+        console.log("[handleUpload] Calling parseResumeText with verification...");
+        parsed = await parseResumeText(content);
+        console.log("[handleUpload] parseResumeText completed with verified data");
+      } catch (parseError: any) {
         console.error("[handleUpload] Parse error:", parseError);
-        Alert.alert("Error", "Failed to parse resume. Please try again or add information manually.");
+        Alert.alert(
+          "Error",
+          parseError?.message ||
+            "Failed to parse resume. Please try again or add information manually."
+        );
         setIsParsingResume(false);
         setWaitingForUserInput(true);
         return;
       }
 
-      console.log("[handleUpload] Resume parsed:", parsed);
+      console.log("[handleUpload] Resume parsed and verified:", {
+        experienceCount: parsed.experience.length,
+        skillsCount: parsed.skills.length,
+        toolsCount: parsed.tools.length,
+      });
 
-      if (!parsed) {
-        console.error("[handleUpload] Parsed result is empty");
-        Alert.alert("Error", "Failed to parse resume content. Please try again.");
-        setIsParsingResume(false);
-        setWaitingForUserInput(true);
-        return;
-      }
-
-      const experience = ((parsed as any)?.experience || []).map((exp: any) => ({
+      const newExperiences = (parsed.experience || []).map((exp) => ({
         ...exp,
         id: Date.now().toString() + Math.random(),
       }));
 
-      const skills = ((parsed as any)?.skills || []).map((skill: any) => ({
-        ...skill,
-        id: Date.now().toString() + Math.random(),
+      const existingExpNormalized = profile.experience.map((exp) => ({
+        title: normalizeText(exp.title),
+        company: normalizeText(exp.company),
       }));
 
-      const certifications = ((parsed as any)?.certifications || []).map((cert: any) => ({
+      const deduplicatedExperiences = newExperiences.filter((newExp) => {
+        const normalized = {
+          title: normalizeText(newExp.title),
+          company: normalizeText(newExp.company),
+        };
+        const isDuplicate = existingExpNormalized.some(
+          (existing) =>
+            existing.title === normalized.title &&
+            existing.company === normalized.company
+        );
+        if (isDuplicate) {
+          console.log(
+            `[handleUpload] Skipping duplicate experience: ${newExp.title} at ${newExp.company}`
+          );
+        }
+        return !isDuplicate;
+      });
+
+      const newSkills = (parsed.skills || []).map((skill) => ({
+        ...skill,
+        id: Date.now().toString() + Math.random(),
+        source: 'resume_parse' as const,
+        confirmedAt: new Date().toISOString(),
+      }));
+
+      const existingSkillsNormalized = profile.skills.map((s) =>
+        normalizeText(s.name)
+      );
+
+      const deduplicatedSkills = newSkills.filter((newSkill) => {
+        const normalized = normalizeText(newSkill.name);
+        const isDuplicate = existingSkillsNormalized.includes(normalized);
+        if (isDuplicate) {
+          console.log(`[handleUpload] Skipping duplicate skill: ${newSkill.name}`);
+        }
+        return !isDuplicate;
+      });
+
+      const newCertifications = (parsed.certifications || []).map((cert) => ({
         ...cert,
         id: Date.now().toString() + Math.random(),
       }));
 
-      const tools = ((parsed as any)?.tools || []).map((tool: any) => ({
+      const existingCertsNormalized = profile.certifications.map((c) =>
+        normalizeText(c.name)
+      );
+
+      const deduplicatedCertifications = newCertifications.filter((newCert) => {
+        const normalized = normalizeText(newCert.name);
+        const isDuplicate = existingCertsNormalized.includes(normalized);
+        if (isDuplicate) {
+          console.log(
+            `[handleUpload] Skipping duplicate certification: ${newCert.name}`
+          );
+        }
+        return !isDuplicate;
+      });
+
+      const newTools = (parsed.tools || []).map((tool) => ({
         ...tool,
         id: Date.now().toString() + Math.random(),
+        source: 'resume_parse' as const,
+        confirmedAt: new Date().toISOString(),
       }));
 
-      const projects = ((parsed as any)?.projects || []).map((project: any) => ({
+      const existingToolsNormalized = profile.tools.map((t) =>
+        normalizeText(t.name)
+      );
+
+      const deduplicatedTools = newTools.filter((newTool) => {
+        const normalized = normalizeText(newTool.name);
+        const isDuplicate = existingToolsNormalized.includes(normalized);
+        if (isDuplicate) {
+          console.log(`[handleUpload] Skipping duplicate tool: ${newTool.name}`);
+        }
+        return !isDuplicate;
+      });
+
+      const newProjects = (parsed.projects || []).map((project) => ({
         ...project,
         id: Date.now().toString() + Math.random(),
       }));
 
-      const domainExperience = (parsed as any)?.domainExperience || [];
+      const existingProjectsNormalized = profile.projects.map((p) =>
+        normalizeText(p.title)
+      );
+
+      const deduplicatedProjects = newProjects.filter((newProject) => {
+        const normalized = normalizeText(newProject.title);
+        const isDuplicate = existingProjectsNormalized.includes(normalized);
+        if (isDuplicate) {
+          console.log(
+            `[handleUpload] Skipping duplicate project: ${newProject.title}`
+          );
+        }
+        return !isDuplicate;
+      });
+
+      const newDomains = parsed.domainExperience || [];
+      const existingDomainsNormalized = profile.domainExperience.map((d) =>
+        normalizeText(d)
+      );
+
+      const deduplicatedDomains = newDomains.filter((newDomain) => {
+        const normalized = normalizeText(newDomain);
+        const isDuplicate = existingDomainsNormalized.includes(normalized);
+        if (isDuplicate) {
+          console.log(`[handleUpload] Skipping duplicate domain: ${newDomain}`);
+        }
+        return !isDuplicate;
+      });
 
       updateProfile({
-        experience: [...profile.experience, ...experience],
-        skills: [...profile.skills, ...skills],
-        certifications: [...profile.certifications, ...certifications],
-        tools: [...profile.tools, ...tools],
-        projects: [...profile.projects, ...projects],
+        experience: [...profile.experience, ...deduplicatedExperiences],
+        skills: [...profile.skills, ...deduplicatedSkills],
+        certifications: [...profile.certifications, ...deduplicatedCertifications],
+        tools: [...profile.tools, ...deduplicatedTools],
+        projects: [...profile.projects, ...deduplicatedProjects],
         domainExperience: [
           ...profile.domainExperience,
-          ...domainExperience,
+          ...deduplicatedDomains,
         ],
       });
 
@@ -569,12 +575,12 @@ ${content}`,
 
       const updatedProfile = {
         ...profile,
-        experience: [...profile.experience, ...experience],
-        skills: [...profile.skills, ...skills],
-        certifications: [...profile.certifications, ...certifications],
-        tools: [...profile.tools, ...tools],
-        projects: [...profile.projects, ...projects],
-        domainExperience: [...profile.domainExperience, ...domainExperience],
+        experience: [...profile.experience, ...deduplicatedExperiences],
+        skills: [...profile.skills, ...deduplicatedSkills],
+        certifications: [...profile.certifications, ...deduplicatedCertifications],
+        tools: [...profile.tools, ...deduplicatedTools],
+        projects: [...profile.projects, ...deduplicatedProjects],
+        domainExperience: [...profile.domainExperience, ...deduplicatedDomains],
       };
 
       const systemContext = `<system>
@@ -594,12 +600,12 @@ ${JSON.stringify(updatedProfile, null, 2)}
 IMPORTANT: ALWAYS end questions with [Options: choice1 | choice2 | ...] format.
 </system>
 
-User uploaded resume. Successfully extracted:
-- ${experience.length} experiences
-- ${skills.length} skills
-- ${certifications.length} certifications
-- ${tools.length} tools
-- ${projects.length} projects
+User uploaded resume. Successfully extracted and verified:
+- ${deduplicatedExperiences.length} experiences
+- ${deduplicatedSkills.length} skills
+- ${deduplicatedCertifications.length} certifications
+- ${deduplicatedTools.length} tools
+- ${deduplicatedProjects.length} projects
 
 Now confirm the upload success briefly and ask ONE simple clarifying question with options to improve the profile. Focus on the most important missing info.`;
 

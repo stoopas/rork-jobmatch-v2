@@ -17,6 +17,7 @@ import {
 } from "react-native";
 import { useMutation } from "@tanstack/react-query";
 import { parseResumeText, showParseSuccessAlert, type ResumeData } from "../../lib/resumeParser";
+import { normalizeText } from "../../lib/sourceOfTruth";
 
 import { useUserProfile } from "../../contexts/UserProfileContext";
 import type {
@@ -147,43 +148,144 @@ export default function EditProfileScreen() {
       console.log("[onSuccess] Resume parsed successfully");
       console.log("[onSuccess] parsed data:", JSON.stringify(parsed, null, 2).slice(0, 500));
 
-      // Defensive guards: ensure arrays exist and use optional chaining
-      const experience = (parsed?.experience || []).map((exp: any) => ({
+      const newExperiences = (parsed?.experience || []).map((exp: any) => ({
         ...exp,
         id: Date.now().toString() + Math.random(),
       }));
-      console.log("[onSuccess] Mapped experience count:", experience.length);
 
-      const skills = (parsed?.skills || []).map((skill: any) => ({
+      const existingExpNormalized = profile.experience.map((exp) => ({
+        title: normalizeText(exp.title),
+        company: normalizeText(exp.company),
+      }));
+
+      const deduplicatedExperiences = newExperiences.filter((newExp: any) => {
+        const normalized = {
+          title: normalizeText(newExp.title),
+          company: normalizeText(newExp.company),
+        };
+        const isDuplicate = existingExpNormalized.some(
+          (existing) =>
+            existing.title === normalized.title &&
+            existing.company === normalized.company
+        );
+        if (isDuplicate) {
+          console.log(
+            `[onSuccess] Skipping duplicate experience: ${newExp.title} at ${newExp.company}`
+          );
+        }
+        return !isDuplicate;
+      });
+
+      console.log("[onSuccess] Unique experiences to add:", deduplicatedExperiences.length);
+
+      const newSkills = (parsed?.skills || []).map((skill: any) => ({
         ...skill,
         id: Date.now().toString() + Math.random(),
         source: 'resume_parse' as const,
         confirmedAt: new Date().toISOString(),
       }));
-      console.log("[onSuccess] Mapped skills count:", skills.length);
 
-      const certifications = (parsed?.certifications || []).map((cert: any) => ({
+      const existingSkillsNormalized = profile.skills.map((s) =>
+        normalizeText(s.name)
+      );
+
+      const deduplicatedSkills = newSkills.filter((newSkill: any) => {
+        const normalized = normalizeText(newSkill.name);
+        const isDuplicate = existingSkillsNormalized.includes(normalized);
+        if (isDuplicate) {
+          console.log(`[onSuccess] Skipping duplicate skill: ${newSkill.name}`);
+        }
+        return !isDuplicate;
+      });
+
+      console.log("[onSuccess] Unique skills to add:", deduplicatedSkills.length);
+
+      const newCertifications = (parsed?.certifications || []).map((cert: any) => ({
         ...cert,
         id: Date.now().toString() + Math.random(),
       }));
-      console.log("[onSuccess] Mapped certifications count:", certifications.length);
 
-      const tools = (parsed?.tools || []).map((tool: any) => ({
+      const existingCertsNormalized = profile.certifications.map((c) =>
+        normalizeText(c.name)
+      );
+
+      const deduplicatedCertifications = newCertifications.filter(
+        (newCert: any) => {
+          const normalized = normalizeText(newCert.name);
+          const isDuplicate = existingCertsNormalized.includes(normalized);
+          if (isDuplicate) {
+            console.log(
+              `[onSuccess] Skipping duplicate certification: ${newCert.name}`
+            );
+          }
+          return !isDuplicate;
+        }
+      );
+
+      console.log(
+        "[onSuccess] Unique certifications to add:",
+        deduplicatedCertifications.length
+      );
+
+      const newTools = (parsed?.tools || []).map((tool: any) => ({
         ...tool,
         id: Date.now().toString() + Math.random(),
         source: 'resume_parse' as const,
         confirmedAt: new Date().toISOString(),
       }));
-      console.log("[onSuccess] Mapped tools count:", tools.length);
 
-      const projects = (parsed?.projects || []).map((project: any) => ({
+      const existingToolsNormalized = profile.tools.map((t) =>
+        normalizeText(t.name)
+      );
+
+      const deduplicatedTools = newTools.filter((newTool: any) => {
+        const normalized = normalizeText(newTool.name);
+        const isDuplicate = existingToolsNormalized.includes(normalized);
+        if (isDuplicate) {
+          console.log(`[onSuccess] Skipping duplicate tool: ${newTool.name}`);
+        }
+        return !isDuplicate;
+      });
+
+      console.log("[onSuccess] Unique tools to add:", deduplicatedTools.length);
+
+      const newProjects = (parsed?.projects || []).map((project: any) => ({
         ...project,
         id: Date.now().toString() + Math.random(),
       }));
-      console.log("[onSuccess] Mapped projects count:", projects.length);
 
-      const domainExperience = parsed?.domainExperience || [];
-      console.log("[onSuccess] Domain experience count:", domainExperience.length);
+      const existingProjectsNormalized = profile.projects.map((p) =>
+        normalizeText(p.title)
+      );
+
+      const deduplicatedProjects = newProjects.filter((newProject: any) => {
+        const normalized = normalizeText(newProject.title);
+        const isDuplicate = existingProjectsNormalized.includes(normalized);
+        if (isDuplicate) {
+          console.log(
+            `[onSuccess] Skipping duplicate project: ${newProject.title}`
+          );
+        }
+        return !isDuplicate;
+      });
+
+      console.log("[onSuccess] Unique projects to add:", deduplicatedProjects.length);
+
+      const newDomains = parsed?.domainExperience || [];
+      const existingDomainsNormalized = profile.domainExperience.map((d) =>
+        normalizeText(d)
+      );
+
+      const deduplicatedDomains = newDomains.filter((newDomain: string) => {
+        const normalized = normalizeText(newDomain);
+        const isDuplicate = existingDomainsNormalized.includes(normalized);
+        if (isDuplicate) {
+          console.log(`[onSuccess] Skipping duplicate domain: ${newDomain}`);
+        }
+        return !isDuplicate;
+      });
+
+      console.log("[onSuccess] Unique domains to add:", deduplicatedDomains.length);
 
       console.log("[onSuccess] Current profile state:");
       console.log("[onSuccess] - profile.experience.length:", profile.experience.length);
@@ -194,14 +296,14 @@ export default function EditProfileScreen() {
       console.log("[onSuccess] - profile.domainExperience.length:", profile.domainExperience.length);
 
       const updatedProfileData = {
-        experience: [...profile.experience, ...experience],
-        skills: [...profile.skills, ...skills],
-        certifications: [...profile.certifications, ...certifications],
-        tools: [...profile.tools, ...tools],
-        projects: [...profile.projects, ...projects],
+        experience: [...profile.experience, ...deduplicatedExperiences],
+        skills: [...profile.skills, ...deduplicatedSkills],
+        certifications: [...profile.certifications, ...deduplicatedCertifications],
+        tools: [...profile.tools, ...deduplicatedTools],
+        projects: [...profile.projects, ...deduplicatedProjects],
         domainExperience: [
           ...profile.domainExperience,
-          ...domainExperience,
+          ...deduplicatedDomains,
         ],
       };
 
