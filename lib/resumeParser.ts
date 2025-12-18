@@ -46,19 +46,35 @@ export const resumeSchema = z.object({
 
 export type ResumeData = z.infer<typeof resumeSchema>;
 
-export async function parseResumeText(resumeText: string): Promise<ResumeData> {
-  console.log("[parseResume] === START PARSE FUNCTION ===");
-  console.log("[parseResume] Resume text length:", resumeText.length);
-  console.log("[parseResume] First 300 chars:", resumeText.slice(0, 300));
+type FileInfo = {
+  uri: string;
+  mimeType: string;
+  name?: string;
+};
 
-  const prompt = `You are a STRICT and THOROUGH resume parser.
+export async function parseResumeText(
+  input: string | FileInfo
+): Promise<ResumeData> {
+  console.log("[parseResume] === START PARSE FUNCTION ===");
+  
+  const isFile = typeof input === 'object' && 'uri' in input;
+  
+  console.log("[parseResume] Input type:", isFile ? 'file' : 'text');
+  if (isFile) {
+    console.log("[parseResume] File info:", { mimeType: input.mimeType, name: input.name });
+  } else {
+    console.log("[parseResume] Text length:", (input as string).length);
+    console.log("[parseResume] First 300 chars:", (input as string).slice(0, 300));
+  }
+
+  const systemPrompt = `You are a STRICT and THOROUGH resume parser.
 
 SOURCE OF TRUTH:
-- Your ONLY source of truth is the resume text between <<<RESUME>>> and <<<END_RESUME>>>.
+- Your ONLY source of truth is the resume provided (text or file).
 - You are FORBIDDEN from using any external memory, prior chats, user profiles, or assumptions.
 
 HALLUCINATION RULE:
-- Do NOT invent or infer any job, company, title, date, skill, tool, certification, project, domain, or achievement that is not explicitly supported by the resume text.
+- Do NOT invent or infer any job, company, title, date, skill, tool, certification, project, domain, or achievement that is not explicitly in the resume.
 
 THOROUGHNESS RULE:
 - Extract as much as you can from what is actually written.
@@ -88,15 +104,30 @@ Return ONE valid JSON object ONLY (no markdown, no backticks) with this shape:
 Rules for missing values:
 - Use "" for unknown strings, [] for unknown arrays.
 - For current roles: current=true and endDate="".
-- Do not include null/undefined.
+- Do not include null/undefined.`;
+
+  let userContent: string | { type: string; text?: string; image?: string }[];
+  
+  if (isFile) {
+    console.log("[parseResume] Calling AI with file attachment...");
+    userContent = [
+      { type: "text", text: "Parse this resume and extract all information according to the instructions." },
+      { type: "image", image: input.uri }
+    ];
+  } else {
+    console.log("[parseResume] Calling AI with text content...");
+    userContent = `Parse the following resume and extract all information according to the instructions.
 
 <<<RESUME>>>
-${resumeText}
+${input}
 <<<END_RESUME>>>`;
+  }
 
-  console.log("[parseResume] Calling AI with strict prompt...");
   const aiResponse = await generateText({
-    messages: [{ role: "user", content: prompt }],
+    messages: [
+      { role: "user", content: systemPrompt },
+      { role: "user", content: userContent as any }
+    ],
   });
 
   console.log("[parseResume] AI response received");
@@ -114,7 +145,7 @@ ${resumeText}
   try {
     parsed = JSON.parse(aiText);
     console.log("[parseResume] JSON.parse succeeded");
-  } catch (_jsonError) {
+  } catch {
     console.error("[parseResume] JSON.parse failed, attempting to extract first JSON object...");
     const match = aiText.match(/\{[\s\S]*\}/);
     if (match) {
@@ -161,10 +192,11 @@ ${resumeText}
     domainExperience: validated.domainExperience?.length || 0,
   });
 
-  console.log("[parseResume] Running verification against resume text...");
-  const verified = verifyAndCleanResumeExtraction(resumeText, validated);
+  console.log("[parseResume] Running verification against resume source...");
+  const resumeTextForVerification = isFile ? "" : (input as string);
+  const verified = isFile ? validated : verifyAndCleanResumeExtraction(resumeTextForVerification, validated);
 
-  const isNonTrivialResume = resumeText.trim().length > 400;
+  const isNonTrivialResume = isFile || (typeof input === 'string' && input.trim().length > 400);
   const nothingExtracted =
     verified.experience.length === 0 &&
     verified.skills.length === 0 &&
@@ -175,8 +207,10 @@ ${resumeText}
 
   if (isNonTrivialResume && nothingExtracted) {
     console.error("[parseResume] SANITY CHECK FAILED: Non-trivial resume but nothing extracted");
-    console.error("[parseResume] Resume length:", resumeText.length);
-    console.error("[parseResume] Resume preview:", resumeText.slice(0, 500));
+    if (!isFile) {
+      console.error("[parseResume] Resume length:", (input as string).length);
+      console.error("[parseResume] Resume preview:", (input as string).slice(0, 500));
+    }
     throw new Error(
       "Failed to extract any information from the resume. The resume may be in an unsupported format or the content could not be parsed."
     );

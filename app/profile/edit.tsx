@@ -134,11 +134,11 @@ export default function EditProfileScreen() {
     });
   };
 
-  const { mutateAsync: parseResumeAsync, isPending: isParsingResume } = useMutation<ResumeData, Error, string>({
-    mutationFn: async (resumeText: string): Promise<ResumeData> => {
+  const { mutateAsync: parseResumeAsync, isPending: isParsingResume } = useMutation<ResumeData, Error, { uri: string; mimeType: string; name?: string } | string>({
+    mutationFn: async (input: { uri: string; mimeType: string; name?: string } | string): Promise<ResumeData> => {
       console.log("[mutationFn] === START MUTATION FUNCTION ===");
       console.log("[mutationFn] About to call parseResumeText...");
-      const result = await parseResumeText(resumeText);
+      const result = await parseResumeText(input);
       console.log("[mutationFn] parseResumeText completed, result:", result);
       console.log("[mutationFn] === END MUTATION FUNCTION ===");
       return result;
@@ -385,9 +385,28 @@ export default function EditProfileScreen() {
       console.log("[handleUpload] URI type:", typeof uri);
       console.log("[handleUpload] URI length:", uri?.length);
 
-      // Use Expo FileSystem first (native reliable method)
-      console.log("[handleUpload] About to read file contents...");
-      console.log("[handleUpload] FileSystem.readAsStringAsync:", typeof FileSystem.readAsStringAsync);
+      const fileAsset = (result as any).assets?.[0] || result;
+      const fileName = fileAsset.name || uri.split('/').pop() || 'resume';
+      const mimeType = fileAsset.mimeType || fileAsset.type || 'application/octet-stream';
+      
+      console.log("[handleUpload] File info:", { fileName, mimeType });
+
+      const isPDF = mimeType.includes('pdf') || fileName.toLowerCase().endsWith('.pdf');
+      const isDocx = mimeType.includes('wordprocessingml') || fileName.toLowerCase().endsWith('.docx');
+      const isDoc = mimeType.includes('msword') || fileName.toLowerCase().endsWith('.doc');
+
+      if (isPDF || isDocx || isDoc) {
+        console.log("[handleUpload] Detected structured document format, passing to AI for extraction");
+        try {
+          await parseResumeAsync({ uri, mimeType, name: fileName });
+        } catch (err: any) {
+          console.error("[handleUpload] parseResumeAsync error:", err?.message ?? err, err?.stack ?? err);
+          Alert.alert("Error", err?.message ? `Failed to parse resume: ${err.message}` : "Failed to parse resume. Please try again.");
+        }
+        return;
+      }
+
+      console.log("[handleUpload] Text file detected, reading content...");
       let content: string | null = null;
       try {
         console.log("[handleUpload] Calling FileSystem.readAsStringAsync...");
@@ -396,21 +415,14 @@ export default function EditProfileScreen() {
       } catch (fsErr) {
         console.warn("[handleUpload] FileSystem.readAsStringAsync failed, attempting fetch fallback");
         console.warn("[handleUpload] fsErr:", fsErr);
-        console.warn("[handleUpload] fsErr type:", typeof fsErr);
-        console.warn("[handleUpload] fsErr message:", (fsErr as any)?.message);
-        console.warn("[handleUpload] fsErr stack:", (fsErr as any)?.stack);
         try {
           console.log("[handleUpload] Attempting fetch fallback...");
           const resp = await fetch(uri);
           console.log("[handleUpload] Fetch response status:", resp.status);
-          console.log("[handleUpload] Fetch response ok:", resp.ok);
           content = await resp.text();
           console.log("[handleUpload] Fetch fallback succeeded");
         } catch (fetchErr) {
           console.error("[handleUpload] Fallback fetch failed:", fetchErr);
-          console.error("[handleUpload] fetchErr type:", typeof fetchErr);
-          console.error("[handleUpload] fetchErr message:", (fetchErr as any)?.message);
-          console.error("[handleUpload] fetchErr stack:", (fetchErr as any)?.stack);
           content = null;
         }
       }
@@ -422,10 +434,8 @@ export default function EditProfileScreen() {
       }
 
       console.log("[handleUpload] File read successfully, length:", content.length);
-      console.log("[handleUpload] Content type:", typeof content);
       console.log("[handleUpload] First 200 chars:", content.substring(0, 200));
 
-      // call parse mutation and await it so we can catch runtime errors and log stacks
       try {
         await parseResumeAsync(content);
       } catch (err: any) {
