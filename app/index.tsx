@@ -1,5 +1,5 @@
 import * as DocumentPicker from "expo-document-picker";
-import * as FileSystem from "expo-file-system";
+import { extractResumeText } from "../lib/resumeTextExtractor";
 import { router } from "expo-router";
 import { FileText, Plus, Sparkles, Upload, Briefcase } from "lucide-react-native";
 import React, { useState } from "react";
@@ -119,33 +119,20 @@ export default function HomeScreen() {
 
       console.log("[onboarding] File selected:", file.name);
 
-      let content: string | null = null;
+      console.log("[onboarding] Extracting text from file...");
+      let extracted;
       try {
-        content = await FileSystem.readAsStringAsync(file.uri);
-        console.log("[onboarding] FileSystem read succeeded");
-      } catch (fsErr) {
-        console.warn("[onboarding] FileSystem failed, trying fetch", fsErr);
-        try {
-          const resp = await fetch(file.uri);
-          content = await resp.text();
-          console.log("[onboarding] Fetch fallback succeeded");
-        } catch (fetchErr) {
-          console.error("[onboarding] Fetch fallback failed:", fetchErr);
-          content = null;
-        }
-      }
-
-      if (!content) {
-        console.error("[onboarding] Content is null");
-        Alert.alert("Error", "Could not read selected file. Try a different file.");
+        extracted = await extractResumeText(file.uri, file.name);
+        console.log("[onboarding] Text extracted successfully, length:", extracted.text.length);
+      } catch (extractErr: any) {
+        console.error("[onboarding] Text extraction failed:", extractErr?.message);
+        Alert.alert("Error", extractErr?.message || "Could not extract text from file.");
         setIsOnboarding(false);
         return;
       }
 
-      console.log("[onboarding] File read successfully, length:", content.length);
-
       try {
-        await parseResumeAsync(content);
+        await parseResumeAsync(extracted.text);
       } catch (err: any) {
         console.error("[onboarding] parseResumeAsync error:", err?.message ?? err);
         Alert.alert("Error", err?.message ? `Failed to parse resume: ${err.message}` : "Failed to parse resume. Please try again.");

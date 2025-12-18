@@ -1,5 +1,4 @@
 import * as DocumentPicker from "expo-document-picker";
-import * as FileSystem from "expo-file-system";
 import { router } from "expo-router";
 import { Plus, Trash2, Upload, X } from "lucide-react-native";
 import React, { useState } from "react";
@@ -18,6 +17,7 @@ import {
 import { useMutation } from "@tanstack/react-query";
 import { parseResumeText, showParseSuccessAlert, type ResumeData } from "../../lib/resumeParser";
 import { normalizeText } from "../../lib/sourceOfTruth";
+import { extractResumeText } from "../../lib/resumeTextExtractor";
 
 import { useUserProfile } from "../../contexts/UserProfileContext";
 import type {
@@ -134,11 +134,11 @@ export default function EditProfileScreen() {
     });
   };
 
-  const { mutateAsync: parseResumeAsync, isPending: isParsingResume } = useMutation<ResumeData, Error, { uri: string; mimeType: string; name?: string } | string>({
-    mutationFn: async (input: { uri: string; mimeType: string; name?: string } | string): Promise<ResumeData> => {
+  const { mutateAsync: parseResumeAsync, isPending: isParsingResume } = useMutation<ResumeData, Error, string>({
+    mutationFn: async (resumeText: string): Promise<ResumeData> => {
       console.log("[mutationFn] === START MUTATION FUNCTION ===");
       console.log("[mutationFn] About to call parseResumeText...");
-      const result = await parseResumeText(input);
+      const result = await parseResumeText(resumeText);
       console.log("[mutationFn] parseResumeText completed, result:", result);
       console.log("[mutationFn] === END MUTATION FUNCTION ===");
       return result;
@@ -387,70 +387,29 @@ export default function EditProfileScreen() {
 
       const fileAsset = (result as any).assets?.[0] || result;
       const fileName = fileAsset.name || uri.split('/').pop() || 'resume';
-      const mimeType = fileAsset.mimeType || fileAsset.type || 'application/octet-stream';
-      
-      console.log("[handleUpload] File info:", { fileName, mimeType });
+      console.log("[handleUpload] File info:", { fileName, uri });
 
-      const isPDF = mimeType.includes('pdf') || fileName.toLowerCase().endsWith('.pdf');
-      const isDocx = mimeType.includes('wordprocessingml') || fileName.toLowerCase().endsWith('.docx');
-      const isDoc = mimeType.includes('msword') || fileName.toLowerCase().endsWith('.doc');
-
-      if (isPDF || isDocx || isDoc) {
-        console.log("[handleUpload] Detected structured document format (PDF/DOCX)");
-        Alert.alert(
-          "PDF/DOCX Not Supported",
-          "PDF and Word document parsing is temporarily disabled.\n\nPlease either:\n1. Save your resume as a .txt file and upload it\n2. Copy-paste your resume content in the chat\n\nWe're working on proper document extraction to prevent data corruption.",
-          [{ text: "OK" }]
-        );
+      console.log("[handleUpload] Extracting text from file...");
+      let extracted;
+      try {
+        extracted = await extractResumeText(uri, fileName);
+        console.log("[handleUpload] Text extracted successfully, length:", extracted.text.length);
+      } catch (extractErr: any) {
+        console.error("[handleUpload] Text extraction failed:", extractErr?.message);
+        Alert.alert("Error", extractErr?.message || "Could not extract text from file.");
         return;
       }
 
-      console.log("[handleUpload] Text file detected, reading content...");
-      let content: string | null = null;
       try {
-        console.log("[handleUpload] Calling FileSystem.readAsStringAsync...");
-        content = await FileSystem.readAsStringAsync(uri);
-        console.log("[handleUpload] FileSystem.readAsStringAsync succeeded");
-      } catch (fsErr) {
-        console.warn("[handleUpload] FileSystem.readAsStringAsync failed, attempting fetch fallback");
-        console.warn("[handleUpload] fsErr:", fsErr);
-        try {
-          console.log("[handleUpload] Attempting fetch fallback...");
-          const resp = await fetch(uri);
-          console.log("[handleUpload] Fetch response status:", resp.status);
-          content = await resp.text();
-          console.log("[handleUpload] Fetch fallback succeeded");
-        } catch (fetchErr) {
-          console.error("[handleUpload] Fallback fetch failed:", fetchErr);
-          content = null;
-        }
-      }
-
-      if (!content) {
-        console.error("[handleUpload] Content is null or empty after all read attempts");
-        Alert.alert("Error", "Could not read selected file. Try a different file or platform.");
-        return;
-      }
-
-      console.log("[handleUpload] File read successfully, length:", content.length);
-      console.log("[handleUpload] First 200 chars:", content.substring(0, 200));
-
-      try {
-        await parseResumeAsync(content);
+        await parseResumeAsync(extracted.text);
       } catch (err: any) {
         console.error("[handleUpload] parseResumeAsync error:", err?.message ?? err, err?.stack ?? err);
         Alert.alert("Error", err?.message ? `Failed to parse resume: ${err.message}` : "Failed to parse resume. Please try again.");
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("[handleUpload] === CAUGHT ERROR IN HANDLER ===");
-      console.error("[handleUpload] Parse error:", error);
-      console.error("[handleUpload] Error type:", typeof error);
-      console.error("[handleUpload] Error constructor:", (error as any)?.constructor?.name);
-      console.error("[handleUpload] Error name:", (error as any)?.name);
-      console.error("[handleUpload] Error message:", (error as any)?.message);
-      console.error("[handleUpload] Error stack:", (error as any)?.stack);
-      console.error("[handleUpload] Full error object:", JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
-      Alert.alert("Error", "Failed to upload resume. Please try again.");
+      console.error("[handleUpload] Error:", error?.message ?? error);
+      Alert.alert("Error", error?.message || "Failed to upload resume. Please try again.");
     }
   };
 

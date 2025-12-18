@@ -2,6 +2,7 @@ import { Alert } from "react-native";
 import { generateText } from "@rork-ai/toolkit-sdk";
 import { z } from "zod";
 import { verifyAndCleanResumeExtraction } from "./sourceOfTruth";
+import { validateResumeTextBeforeParsing } from "./resumeTextExtractor";
 
 const experienceItemSchema = z.object({
   title: z.string().min(1, "Experience title is required"),
@@ -46,38 +47,33 @@ export const resumeSchema = z.object({
 
 export type ResumeData = z.infer<typeof resumeSchema>;
 
-type FileInfo = {
-  uri: string;
-  mimeType: string;
-  name?: string;
-};
-
 export async function parseResumeText(
-  input: string | FileInfo
+  input: string
 ): Promise<ResumeData> {
   console.log("[parseResume] === START PARSE FUNCTION ===");
+  console.log("[parseResume] Input text length:", input.length);
+  console.log("[parseResume] First 300 chars:", input.slice(0, 300));
+
+  validateResumeTextBeforeParsing(input);
   
-  const isFile = typeof input === 'object' && 'uri' in input;
-  
-  console.log("[parseResume] Input type:", isFile ? 'file' : 'text');
-  if (isFile) {
-    console.log("[parseResume] File info:", { mimeType: input.mimeType, name: input.name });
-  } else {
-    console.log("[parseResume] Text length:", (input as string).length);
-    console.log("[parseResume] First 300 chars:", (input as string).slice(0, 300));
-  }
+  console.log("[parseResume] Pre-parse validation passed");
 
   const systemPrompt = `You are a STRICT and THOROUGH resume parser.
 
 SOURCE OF TRUTH:
-- Your ONLY source of truth is the resume provided (text or file).
+- Your ONLY source of truth is the resume text between <<<RESUME>>> and <<<END_RESUME>>>.
 - You are FORBIDDEN from using any external memory, prior chats, user profiles, or assumptions.
 
+CRITICAL METADATA RULE:
+- You MUST ignore document metadata (file names, PDF info fields, document properties).
+- Only parse content that would be visible on the page to a human reader.
+- If you see PDF structure, object markers, or file metadata, DO NOT extract it.
+
 HALLUCINATION RULE:
-- Do NOT invent or infer any job, company, title, date, skill, tool, certification, project, domain, or achievement that is not explicitly in the resume.
+- Do NOT invent or infer any job, company, title, date, skill, tool, certification, project, domain, or achievement that is not explicitly in the visible resume text.
 
 THOROUGHNESS RULE:
-- Extract as much as you can from what is actually written.
+- Extract as much as you can from what is actually written in the visible content.
 - If the resume clearly contains work history, you MUST return at least 1 experience entry.
 - If the resume clearly lists skills or technologies, you MUST return them.
 
@@ -106,22 +102,12 @@ Rules for missing values:
 - For current roles: current=true and endDate="".
 - Do not include null/undefined.`;
 
-  let userContent: string | { type: string; text?: string; image?: string }[];
-  
-  if (isFile) {
-    console.log("[parseResume] Calling AI with file attachment...");
-    userContent = [
-      { type: "text", text: "Parse this resume and extract all information according to the instructions." },
-      { type: "image", image: input.uri }
-    ];
-  } else {
-    console.log("[parseResume] Calling AI with text content...");
-    userContent = `Parse the following resume and extract all information according to the instructions.
+  console.log("[parseResume] Calling AI with text content...");
+  const userContent = `Parse the following resume and extract all information according to the instructions.
 
 <<<RESUME>>>
 ${input}
 <<<END_RESUME>>>`;
-  }
 
   const aiResponse = await generateText({
     messages: [
@@ -193,22 +179,9 @@ ${input}
   });
 
   console.log("[parseResume] Running verification against resume source...");
-  
-  let resumeTextForVerification: string;
-  if (isFile) {
-    console.error("[parseResume] CRITICAL BUG: File-based parsing is bypassing verification");
-    console.error("[parseResume] The AI received binary/metadata, not extracted text");
-    console.error("[parseResume] This allows hallucinations from PDF metadata to pass through");
-    throw new Error(
-      "PDF/DOCX parsing is currently disabled due to a critical bug. Please upload your resume as a plain text (.txt) file, or copy-paste the content in the chat."
-    );
-  } else {
-    resumeTextForVerification = input as string;
-  }
-  
-  const verified = verifyAndCleanResumeExtraction(resumeTextForVerification, validated);
+  const verified = verifyAndCleanResumeExtraction(input, validated);
 
-  const isNonTrivialResume = isFile || (typeof input === 'string' && input.trim().length > 400);
+  const isNonTrivialResume = input.trim().length > 400;
   const nothingExtracted =
     verified.experience.length === 0 &&
     verified.skills.length === 0 &&
@@ -219,10 +192,8 @@ ${input}
 
   if (isNonTrivialResume && nothingExtracted) {
     console.error("[parseResume] SANITY CHECK FAILED: Non-trivial resume but nothing extracted");
-    if (!isFile) {
-      console.error("[parseResume] Resume length:", (input as string).length);
-      console.error("[parseResume] Resume preview:", (input as string).slice(0, 500));
-    }
+    console.error("[parseResume] Resume length:", input.length);
+    console.error("[parseResume] Resume preview:", input.slice(0, 500));
     throw new Error(
       "Failed to extract any information from the resume. The resume may be in an unsupported format or the content could not be parsed."
     );

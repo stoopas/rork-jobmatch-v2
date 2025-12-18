@@ -1,8 +1,8 @@
 import { createRorkTool, useRorkAgent } from "@rork-ai/toolkit-sdk";
 import { parseResumeText, type ResumeData } from "../lib/resumeParser";
 import { normalizeText } from "../lib/sourceOfTruth";
+import { extractResumeText } from "../lib/resumeTextExtractor";
 import * as DocumentPicker from "expo-document-picker";
-import * as FileSystem from "expo-file-system";
 import { Stack } from "expo-router";
 import { Send, Upload, X } from "lucide-react-native";
 import React, { useCallback, useEffect, useRef, useState } from "react";
@@ -390,34 +390,23 @@ IMPORTANT: ALWAYS end questions with [Options: choice1 | choice2 | ...] format.
       setIsParsingResume(true);
       setWaitingForUserInput(false);
 
-      let content: string | null = null;
+      console.log("[handleUpload] Extracting text from file...");
+      let extracted;
       try {
-        content = await FileSystem.readAsStringAsync(file.uri, {
-          encoding: "utf8",
-        });
-      } catch (fsErr) {
-        console.warn("[handleUpload] FileSystem.readAsStringAsync failed, attempting fetch fallback", fsErr);
-        try {
-          const resp = await fetch(file.uri);
-          content = await resp.text();
-        } catch (fetchErr) {
-          console.error("[handleUpload] Fallback fetch failed:", fetchErr);
-          content = null;
-        }
-      }
-
-      if (!content) {
-        Alert.alert("Error", "Could not read the selected file. Please try a different file.");
+        extracted = await extractResumeText(file.uri, file.name);
+        console.log("[handleUpload] Text extracted successfully, length:", extracted.text.length);
+      } catch (extractErr: any) {
+        console.error("[handleUpload] Text extraction failed:", extractErr?.message);
+        Alert.alert("Error", extractErr?.message || "Could not extract text from file.");
         setIsParsingResume(false);
+        setWaitingForUserInput(true);
         return;
       }
-
-      console.log("[handleUpload] File read successfully, length:", content.length);
 
       let parsed: ResumeData;
       try {
         console.log("[handleUpload] Calling parseResumeText with verification...");
-        parsed = await parseResumeText(content);
+        parsed = await parseResumeText(extracted.text);
         console.log("[handleUpload] parseResumeText completed with verified data");
       } catch (parseError: any) {
         console.error("[handleUpload] Parse error:", parseError);
