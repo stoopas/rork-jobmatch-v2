@@ -18,6 +18,8 @@ export interface ClarifyingQuestion {
   category: 'skill' | 'tool' | 'domain' | 'experience';
   topicKey: string;
   requiresProficiency?: boolean;
+  priority?: number;
+  why?: string;
 }
 
 interface ClarifyingQuestionsProps {
@@ -42,7 +44,8 @@ export default function ClarifyingQuestions({
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const currentQuestion = questions[currentIndex];
-  const progress = ((currentIndex) / questions.length) * 100;
+  const progress = ((currentIndex + 1) / questions.length) * 100;
+  const isLastQuestion = currentIndex === questions.length - 1;
 
   const handleAnswerSelect = (selectedAnswer: Answer) => {
     setAnswer(selectedAnswer);
@@ -157,7 +160,9 @@ export default function ClarifyingQuestions({
       <View style={styles.questionCard}>
         <View style={styles.questionHeader}>
           <HelpCircle size={24} color="#0066FF" />
-          <Text style={styles.questionNumber}>Quick Question</Text>
+          <Text style={styles.questionNumber}>
+            {isLastQuestion ? 'Last Question' : 'Quick Question'}
+          </Text>
         </View>
         <Text style={styles.questionText}>{currentQuestion.text}</Text>
 
@@ -344,6 +349,7 @@ const styles = StyleSheet.create({
   },
   progressContainer: {
     marginBottom: 24,
+    minHeight: 28,
   },
   progressBar: {
     height: 6,

@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from "expo-router";
 import { HelpCircle, ArrowRight } from "lucide-react-native";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import {
   ActivityIndicator,
   ScrollView,
@@ -14,36 +14,42 @@ import { useUserProfile } from "../../contexts/UserProfileContext";
 import { generateText } from "@rork-ai/toolkit-sdk";
 import ClarifyingQuestions, { ClarifyingQuestion } from "../../ui/components/ClarifyingQuestions";
 
+const MAX_QUESTIONS = 5;
+const TARGET_QUESTIONS = 4;
+
 export default function ClarifyScreen() {
   const { jobId } = useLocalSearchParams<{ jobId: string }>();
   const { profile, jobPostings, hasClarificationFor } = useUserProfile();
   const [questions, setQuestions] = useState<ClarifyingQuestion[]>([]);
   const [isGenerating, setIsGenerating] = useState(true);
   const [hasQuestions, setHasQuestions] = useState(false);
+  const hasGeneratedRef = useRef(false);
 
   const job = jobPostings.find((j) => j.id === jobId);
 
-  const generateQuestions = useCallback(async () => {
-    if (!job) return;
+  useEffect(() => {
+    if (!job || hasGeneratedRef.current) return;
 
-    setIsGenerating(true);
+    const generateQuestionsOnce = async () => {
+      hasGeneratedRef.current = true;
+      setIsGenerating(true);
 
-    try {
-      const profileSummary = {
-        skills: profile.skills.map((s) => s.name),
-        tools: profile.tools.map((t) => t.name),
-        domainExperience: profile.domainExperience,
-        experience: profile.experience.map((exp) => ({
-          title: exp.title,
-          description: exp.description,
-        })),
-      };
+      try {
+        const profileSummary = {
+          skills: profile.skills.map((s) => s.name),
+          tools: profile.tools.map((t) => t.name),
+          domainExperience: profile.domainExperience,
+          experience: profile.experience.map((exp) => ({
+            title: exp.title,
+            description: exp.description,
+          })),
+        };
 
-      const aiResponse = await generateText({
-        messages: [
-          {
-            role: "user",
-            content: `You are analyzing gaps between a job posting and a candidate's profile.
+        const aiResponse = await generateText({
+          messages: [
+            {
+              role: "user",
+              content: `You are analyzing gaps between a job posting and a candidate's profile.
 
 Job Posting:
 - Title: ${job.title}
@@ -59,11 +65,14 @@ Task: Generate clarifying questions for skills, tools, or domains in the job tha
 2. Mentioned but need confirmation or proficiency level
 
 Rules:
-- Only ask about items directly relevant to the job
-- Maximum 5 questions
+- Only ask about items DIRECTLY relevant to the job posting
+- Target 3-4 questions, maximum ${MAX_QUESTIONS}
+- Prioritize the most critical gaps (required skills/tools over nice-to-haves)
 - Each question should be short, specific, and yes/no answerable
 - For skills and tools, we'll ask for proficiency (1-5) if they answer yes
+- Assign priority (1-10, where 1 = most critical)
 - Return empty array if the profile already covers everything well
+- Avoid vague/generic questions like "communication" unless explicitly in required skills
 
 Return ONLY valid JSON in this format:
 {
@@ -74,50 +83,57 @@ Return ONLY valid JSON in this format:
       "topic": "[exact name of skill/tool/domain]",
       "category": "skill" | "tool" | "domain" | "experience",
       "topicKey": "skill:[name]" or "tool:[name]" or "domain:[name]",
-      "requiresProficiency": true | false
+      "requiresProficiency": true | false,
+      "priority": 1,
+      "why": "One sentence explaining why this matters for the job"
     }
   ]
 }`,
-          },
-        ],
-      });
+            },
+          ],
+        });
 
-      console.log("[generateQuestions] Raw AI response:", aiResponse?.slice(0, 200));
+        console.log("[generateQuestions] Raw AI response:", aiResponse?.slice(0, 200));
 
-      let cleanedResponse = typeof aiResponse === "string" ? aiResponse.trim() : String(aiResponse || "").trim();
-      
-      if (cleanedResponse.startsWith("```")) {
-        cleanedResponse = cleanedResponse.replace(/^```(?:json)?\n?/, "").replace(/\n?```$/, "");
+        let cleanedResponse = typeof aiResponse === "string" ? aiResponse.trim() : String(aiResponse || "").trim();
+        
+        if (cleanedResponse.startsWith("```")) {
+          cleanedResponse = cleanedResponse.replace(/^```(?:json)?\n?/, "").replace(/\n?```$/, "");
+        }
+
+        console.log("[generateQuestions] Cleaned response:", cleanedResponse.slice(0, 200));
+
+        const parsed = JSON.parse(cleanedResponse);
+        const generatedQuestions: ClarifyingQuestion[] = parsed.questions || [];
+
+        const filteredQuestions = generatedQuestions
+          .filter((q: ClarifyingQuestion) => !hasClarificationFor(q.topicKey))
+          .sort((a: any, b: any) => (a.priority || 5) - (b.priority || 5))
+          .slice(0, MAX_QUESTIONS);
+
+        const finalQuestions = filteredQuestions.length > TARGET_QUESTIONS && 
+          (filteredQuestions[TARGET_QUESTIONS]?.priority ?? 5) > 3
+          ? filteredQuestions.slice(0, TARGET_QUESTIONS)
+          : filteredQuestions;
+
+        console.log("[generateQuestions] Generated questions:", generatedQuestions.length);
+        console.log("[generateQuestions] Filtered & prioritized:", filteredQuestions.length);
+        console.log("[generateQuestions] Final count:", finalQuestions.length);
+
+        setQuestions(finalQuestions);
+        setHasQuestions(finalQuestions.length > 0);
+      } catch (error: any) {
+        console.error("Error generating questions:", error?.message ?? error);
+        setQuestions([]);
+        setHasQuestions(false);
+      } finally {
+        setIsGenerating(false);
       }
+    };
 
-      console.log("[generateQuestions] Cleaned response:", cleanedResponse.slice(0, 200));
-
-      const parsed = JSON.parse(cleanedResponse);
-      const generatedQuestions: ClarifyingQuestion[] = parsed.questions || [];
-
-      const filteredQuestions = generatedQuestions.filter((q: ClarifyingQuestion) => {
-        return !hasClarificationFor(q.topicKey);
-      });
-
-      console.log("[generateQuestions] Generated questions:", generatedQuestions.length);
-      console.log("[generateQuestions] Filtered questions (not already answered):", filteredQuestions.length);
-
-      setQuestions(filteredQuestions);
-      setHasQuestions(filteredQuestions.length > 0);
-    } catch (error: any) {
-      console.error("Error generating questions:", error?.message ?? error);
-      setQuestions([]);
-      setHasQuestions(false);
-    } finally {
-      setIsGenerating(false);
-    }
-  }, [job, profile, hasClarificationFor]);
-
-  useEffect(() => {
-    if (job) {
-      generateQuestions();
-    }
-  }, [job, generateQuestions]);
+    generateQuestionsOnce();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [job?.id]);
 
   const handleComplete = () => {
     router.push({
@@ -145,9 +161,9 @@ Return ONLY valid JSON in this format:
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#0066FF" />
-        <Text style={styles.loadingText}>Analyzing gaps...</Text>
+        <Text style={styles.loadingText}>Preparing a few quick questions...</Text>
         <Text style={styles.loadingSubtext}>
-          Checking what we need to know about your experience
+          Usually 3–5 questions to tailor your resume
         </Text>
       </View>
     );
@@ -178,7 +194,7 @@ Return ONLY valid JSON in this format:
       <View style={styles.header}>
         <Text style={styles.title}>Quick Questions</Text>
         <Text style={styles.subtitle}>
-          Help us understand your fit better by answering a few quick questions about this role.
+          Answer {questions.length} quick question{questions.length !== 1 ? 's' : ''} to tailor your resume.
         </Text>
       </View>
       

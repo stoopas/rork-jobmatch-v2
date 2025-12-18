@@ -59,6 +59,13 @@ function RootLayoutNav() {
         }}
       />
       <Stack.Screen
+        name="job/clarify"
+        options={{
+          title: "Quick Resume Questions",
+          headerLargeTitle: false,
+        }}
+      />
+      <Stack.Screen
         name="job/fit-score"
         options={{
           title: "Fit Score",
