@@ -1,5 +1,4 @@
 import * as FileSystem from "expo-file-system";
-import mammoth from "mammoth";
 
 export type ExtractedResumeText = {
   text: string;
@@ -147,6 +146,8 @@ async function extractDOCXLocally(uri: string): Promise<string> {
   console.log("[extractDOCX] Starting local DOCX extraction...");
   
   try {
+    const mammoth = await import("mammoth");
+    
     const base64 = await FileSystem.readAsStringAsync(uri, {
       encoding: "base64" as any,
     });
@@ -156,7 +157,7 @@ async function extractDOCXLocally(uri: string): Promise<string> {
     const arrayBuffer = Uint8Array.from(atob(base64), c => c.charCodeAt(0)).buffer;
     
     console.log("[extractDOCX] Converted to ArrayBuffer, calling mammoth...");
-    const result = await mammoth.extractRawText({ arrayBuffer });
+    const result = await mammoth.default.extractRawText({ arrayBuffer });
     
     console.log("[extractDOCX] Mammoth extraction complete");
     console.log("[extractDOCX] Extracted text length:", result.value.length);
