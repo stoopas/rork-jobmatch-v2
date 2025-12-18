@@ -33,70 +33,52 @@ export const [UserProfileProvider, useUserProfile] = createContextHook(() => {
   const profileQuery = useQuery({
     queryKey: ["profile"],
     queryFn: async () => {
-      const stored = await AsyncStorage.getItem(PROFILE_KEY);
-      return stored ? JSON.parse(stored) : initialProfile;
+      try {
+        const stored = await AsyncStorage.getItem(PROFILE_KEY);
+        return stored ? JSON.parse(stored) : initialProfile;
+      } catch (error) {
+        console.error("Error loading profile:", error);
+        return initialProfile;
+      }
     },
+    staleTime: Infinity,
   });
 
   const qaQuery = useQuery({
     queryKey: ["qaHistory"],
     queryFn: async () => {
-      const stored = await AsyncStorage.getItem(QA_HISTORY_KEY);
-      return stored ? JSON.parse(stored) : [];
+      try {
+        const stored = await AsyncStorage.getItem(QA_HISTORY_KEY);
+        return stored ? JSON.parse(stored) : [];
+      } catch (error) {
+        console.error("Error loading QA history:", error);
+        return [];
+      }
     },
+    staleTime: Infinity,
   });
 
   const jobsQuery = useQuery({
     queryKey: ["jobPostings"],
     queryFn: async () => {
-      const stored = await AsyncStorage.getItem(JOBS_KEY);
-      return stored ? JSON.parse(stored) : [];
+      try {
+        const stored = await AsyncStorage.getItem(JOBS_KEY);
+        return stored ? JSON.parse(stored) : [];
+      } catch (error) {
+        console.error("Error loading job postings:", error);
+        return [];
+      }
     },
+    staleTime: Infinity,
   });
 
   const { mutateAsync: saveProfileAsync, isPending: isSavingProfile } = useMutation({
     mutationFn: async (newProfile: UserProfile) => {
-      console.log("[saveProfile mutation] Saving profile to AsyncStorage...");
-      console.log("[saveProfile mutation] Profile data:", {
-        experience: newProfile.experience?.length,
-        skills: newProfile.skills?.length,
-        certifications: newProfile.certifications?.length,
-        tools: newProfile.tools?.length,
-        projects: newProfile.projects?.length,
-        domainExperience: newProfile.domainExperience?.length,
-      });
-      const serialized = JSON.stringify(newProfile);
-      console.log("[saveProfile mutation] Serialized length:", serialized.length);
-      await AsyncStorage.setItem(PROFILE_KEY, serialized);
-      console.log("[saveProfile mutation] Profile saved to AsyncStorage");
-      
-      const verification = await AsyncStorage.getItem(PROFILE_KEY);
-      if (verification) {
-        const parsed = JSON.parse(verification);
-        console.log("[saveProfile mutation] Verification - saved data:", {
-          experience: parsed.experience?.length,
-          skills: parsed.skills?.length,
-          certifications: parsed.certifications?.length,
-          tools: parsed.tools?.length,
-          projects: parsed.projects?.length,
-        });
-      }
-      
+      await AsyncStorage.setItem(PROFILE_KEY, JSON.stringify(newProfile));
       return newProfile;
     },
     onSuccess: (saved) => {
-      console.log("[saveProfile onSuccess] Profile successfully saved", {
-        experience: saved.experience?.length,
-        skills: saved.skills?.length,
-        certifications: saved.certifications?.length,
-        tools: saved.tools?.length,
-        projects: saved.projects?.length,
-        domainExperience: saved.domainExperience?.length,
-      });
       setProfile(saved);
-    },
-    onError: (error) => {
-      console.error("[saveProfile onError] Failed to save profile:", error);
     },
   });
 
@@ -134,40 +116,9 @@ export const [UserProfileProvider, useUserProfile] = createContextHook(() => {
 
   const updateProfile = useCallback(
     async (updates: Partial<UserProfile>) => {
-      console.log("[UserProfileContext] updateProfile called with updates:", {
-        experience: updates.experience?.length,
-        skills: updates.skills?.length,
-        certifications: updates.certifications?.length,
-        tools: updates.tools?.length,
-        projects: updates.projects?.length,
-        domainExperience: updates.domainExperience?.length,
-      });
-      console.log("[UserProfileContext] Current profile before update:", {
-        experience: profile.experience?.length,
-        skills: profile.skills?.length,
-        certifications: profile.certifications?.length,
-        tools: profile.tools?.length,
-        projects: profile.projects?.length,
-        domainExperience: profile.domainExperience?.length,
-      });
       const updated = { ...profile, ...updates };
-      console.log("[UserProfileContext] Updated profile:", {
-        experience: updated.experience?.length,
-        skills: updated.skills?.length,
-        certifications: updated.certifications?.length,
-        tools: updated.tools?.length,
-        projects: updated.projects?.length,
-        domainExperience: updated.domainExperience?.length,
-      });
       setProfile(updated);
-      console.log("[UserProfileContext] Calling saveProfileAsync mutation...");
-      try {
-        await saveProfileAsync(updated);
-        console.log("[UserProfileContext] saveProfileAsync completed successfully");
-      } catch (err) {
-        console.error("[UserProfileContext] saveProfileAsync failed:", err);
-        throw err;
-      }
+      await saveProfileAsync(updated);
     },
     [profile, saveProfileAsync]
   );
