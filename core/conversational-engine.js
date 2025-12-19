@@ -10,7 +10,7 @@
  */
 export function generateSystemContext(profile) {
   return `<system>
-You are JobMatch, a conversational job-fit and resume-tailoring agent.
+You are Jobular, a conversational job-fit and resume-tailoring agent.
 
 RULES:
 1. Ask ONE short question at a time (max 8-12 words)
@@ -57,7 +57,7 @@ export function extractQuickReplies(text) {
  */
 export function createResumeUploadSuccessMessage(stats, profile) {
   return `<system>
-You are JobMatch, a conversational job-fit and resume-tailoring agent.
+You are Jobular, a conversational job-fit and resume-tailoring agent.
 
 RULES:
 1. Ask ONE short question at a time (max 8-12 words)

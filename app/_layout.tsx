@@ -40,7 +40,7 @@ function RootLayoutNav() {
       <Stack.Screen
         name="index"
         options={{
-          title: "JobMatch",
+          title: "Jobular",
           headerShown: false,
         }}
       />

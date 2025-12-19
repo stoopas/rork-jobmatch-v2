@@ -173,14 +173,14 @@ export default function HomeScreen() {
               <Sparkles size={48} color="#0066FF" strokeWidth={2} />
             </View>
 
-            <Text style={styles.onboardingTitle}>Welcome to JobMatch</Text>
+            <Text style={styles.onboardingTitle}>Welcome to Jobular</Text>
             <Text style={styles.onboardingSubtitle}>
               Your AI-powered resume tailoring assistant
             </Text>
 
             <Text style={styles.onboardingDescription}>
               Say goodbye to the hassle of customizing resumes for every job.{"\n\n"}
-              JobMatch makes it effortless:{"\n"}
+              Jobular makes it effortless:{"\n"}
               • Set up once with your resume{"\n"}
               • Paste any job posting{"\n"}
               • Get a perfectly tailored resume{"\n\n"}
@@ -250,7 +250,7 @@ export default function HomeScreen() {
         <View style={styles.header}>
           <View style={styles.headerContent}>
             <Sparkles size={32} color="#0066FF" strokeWidth={2} />
-            <Text style={styles.title}>JobMatch</Text>
+            <Text style={styles.title}>Jobular</Text>
           </View>
           <Text style={styles.subtitle}>
             Paste a job posting. Get a tailored resume.

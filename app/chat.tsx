@@ -269,7 +269,7 @@ export default function ChatScreen() {
 
       const welcomeMsg = hasProfile
         ? "Welcome back! I've got your profile. What would you like to do?"
-        : "Hi! I'm JobMatch. I'll help you analyze job postings and create tailored resumes. How would you like to start?";
+        : "Hi! I'm Jobular. I'll help you analyze job postings and create tailored resumes. How would you like to start?";
 
       const quickReplies: QuickReply[] = hasProfile
         ? [
@@ -312,7 +312,7 @@ export default function ChatScreen() {
     setWaitingForUserInput(false);
 
     const systemContext = `<system>
-You are JobMatch, a conversational job-fit and resume-tailoring agent.
+You are Jobular, a conversational job-fit and resume-tailoring agent.
 
 RULES:
 1. Ask ONE short question at a time (max 8-12 words)
@@ -575,7 +575,7 @@ IMPORTANT: ALWAYS end questions with [Options: choice1 | choice2 | ...] format.
       };
 
       const systemContext = `<system>
-You are JobMatch, a conversational job-fit and resume-tailoring agent.
+You are Jobular, a conversational job-fit and resume-tailoring agent.
 
 RULES:
 1. Ask ONE short question at a time (max 8-12 words)
@@ -676,7 +676,7 @@ Now confirm the upload success briefly and ask ONE simple clarifying question wi
     if (isUser && item.parts?.length > 0) {
       const textPart = item.parts.find((p: any) => p.type === "text");
       if (textPart && textPart.text) {
-        if (textPart.text.includes("<system>") || textPart.text.includes("You are JobMatch") || textPart.text.includes("Current user profile:")) {
+        if (textPart.text.includes("<system>") || textPart.text.includes("You are Jobular") || textPart.text.includes("Current user profile:")) {
           return null;
         }
       }
@@ -764,7 +764,7 @@ Now confirm the upload success briefly and ask ONE simple clarifying question wi
       <Stack.Screen
         options={{
           headerShown: true,
-          title: "JobMatch",
+          title: "Jobular",
           headerRight: () => (
             <TouchableOpacity
               onPress={handleClearChat}
