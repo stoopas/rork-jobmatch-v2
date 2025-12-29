@@ -147,9 +147,13 @@ async function extractPDFViaServer(uri: string): Promise<string> {
 async function extractDOCXLocally(uri: string): Promise<{ text: string; base64: string }> {
   console.log("[extractDOCX] Starting local DOCX extraction...");
   console.log("[extractDOCX] Platform:", Platform.OS);
+  console.log("[extractDOCX] URI:", uri);
   
   try {
+    console.log("[extractDOCX] Importing mammoth...");
     const mammoth = await import("mammoth");
+    console.log("[extractDOCX] Mammoth imported successfully");
+    
     let arrayBuffer: ArrayBuffer;
     let base64: string;
     
@@ -166,17 +170,42 @@ async function extractDOCXLocally(uri: string): Promise<{ text: string; base64: 
       const uint8Array = new Uint8Array(arrayBuffer);
       base64 = btoa(String.fromCharCode(...uint8Array));
     } else {
-      console.log("[extractDOCX] Using expo-file-system");
+      console.log("[extractDOCX] Using expo-file-system for mobile");
       
-      base64 = await FileSystem.readAsStringAsync(uri, {
-        encoding: "base64" as any,
-      });
-      
-      console.log("[extractDOCX] Read file as base64, length:", base64.length);
-      arrayBuffer = Uint8Array.from(atob(base64), c => c.charCodeAt(0)).buffer;
+      try {
+        console.log("[extractDOCX] Reading file as base64...");
+        base64 = await FileSystem.readAsStringAsync(uri, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+        
+        console.log("[extractDOCX] Successfully read file as base64, length:", base64.length);
+        
+        if (!base64 || base64.length === 0) {
+          throw new Error("File read returned empty base64 string");
+        }
+        
+        console.log("[extractDOCX] Converting base64 to ArrayBuffer...");
+        
+        const binaryString = atob(base64);
+        const len = binaryString.length;
+        const bytes = new Uint8Array(len);
+        for (let i = 0; i < len; i++) {
+          bytes[i] = binaryString.charCodeAt(i);
+        }
+        arrayBuffer = bytes.buffer;
+        
+        console.log("[extractDOCX] ArrayBuffer created, size:", arrayBuffer.byteLength);
+      } catch (fsError: any) {
+        console.error("[extractDOCX] FileSystem read error:", fsError);
+        throw new Error(`Failed to read file: ${fsError.message}`);
+      }
     }
     
-    console.log("[extractDOCX] Converted to ArrayBuffer, calling mammoth...");
+    if (!arrayBuffer || arrayBuffer.byteLength === 0) {
+      throw new Error("ArrayBuffer is empty");
+    }
+    
+    console.log("[extractDOCX] Calling mammoth.extractRawText...");
     const result = await mammoth.default.extractRawText({ arrayBuffer });
     
     console.log("[extractDOCX] Mammoth extraction complete");
@@ -194,6 +223,7 @@ async function extractDOCXLocally(uri: string): Promise<{ text: string; base64: 
       .trim();
     
     console.log("[extractDOCX] Cleaned text length:", cleanedText.length);
+    console.log("[extractDOCX] First 200 chars:", cleanedText.slice(0, 200));
     
     if (cleanedText.length === 0) {
       throw new ResumeExtractionError(
@@ -204,11 +234,16 @@ async function extractDOCXLocally(uri: string): Promise<{ text: string; base64: 
     return { text: cleanedText, base64 };
   } catch (error: any) {
     console.error("[extractDOCX] Extraction failed:", error);
+    console.error("[extractDOCX] Error name:", error.name);
+    console.error("[extractDOCX] Error message:", error.message);
+    console.error("[extractDOCX] Error stack:", error.stack);
+    
     if (error instanceof ResumeExtractionError) {
       throw error;
     }
+    
     throw new ResumeExtractionError(
-      `Failed to extract DOCX text: ${error.message || 'Unknown error'}`
+      `Failed to extract DOCX text: ${error.message || 'Unknown error'}. Please ensure the file is a valid Word document.`
     );
   }
 }
