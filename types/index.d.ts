@@ -1,6 +1,6 @@
 /**
  * TypeScript Type Definitions
- * Central type definitions for the Jobular application
+ * Central type definitions for the JobMatch application
  */
 
 // User Profile Types
@@ -177,16 +177,16 @@ export interface ParsedJobPosting {
 
 // API Types
 export interface AIGenerateOptions {
-  messages: {
+  messages: Array<{
     role: 'user' | 'assistant' | 'system';
     content: string;
-  }[];
+  }>;
   model?: string;
   temperature?: number;
   maxTokens?: number;
 }
 
-export interface AIGenerateObjectOptions extends AIGenerateOptions {
+export interface AIGenerateObjectOptions<T> extends AIGenerateOptions {
   schema: any; // Zod schema
 }
 
@@ -220,7 +220,7 @@ export interface StorageKeys {
 export interface ValidationResult {
   success: boolean;
   data?: any;
-  errors?: { message: string }[];
+  errors?: Array<{ message: string }>;
 }
 
 // Configuration Types
