@@ -18,6 +18,7 @@ import { useMutation } from "@tanstack/react-query";
 import { parseResumeText, showParseSuccessAlert, type ResumeData } from "../../lib/resumeParser";
 import { normalizeText } from "../../lib/sourceOfTruth";
 import { extractResumeText } from "../../lib/resumeTextExtractor";
+import { ensureLocalCacheUri } from "../../lib/fileUtils";
 
 import { useUserProfile } from "../../contexts/UserProfileContext";
 import type {
@@ -390,10 +391,21 @@ export default function EditProfileScreen() {
       const mimeType = fileAsset.mimeType || fileAsset.type;
       console.log("[handleUpload] File info:", { fileName, uri, mimeType });
 
+      console.log("[handleUpload] Ensuring file is in local cache...");
+      let workingUri;
+      try {
+        workingUri = await ensureLocalCacheUri(uri, fileName);
+        console.log("[handleUpload] Working URI:", workingUri);
+      } catch (cacheErr: any) {
+        console.error("[handleUpload] Failed to cache file:", cacheErr?.message);
+        Alert.alert("Error", cacheErr?.message || "Could not access file.");
+        return;
+      }
+
       console.log("[handleUpload] Extracting text from file...");
       let extracted;
       try {
-        extracted = await extractResumeText(uri, fileName, mimeType);
+        extracted = await extractResumeText(workingUri, fileName, mimeType);
         console.log("[handleUpload] Text extracted successfully, length:", extracted.text.length);
         console.log("[handleUpload] Extraction source:", extracted.source);
       } catch (extractErr: any) {

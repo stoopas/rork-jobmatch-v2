@@ -1,5 +1,6 @@
 import * as DocumentPicker from "expo-document-picker";
 import { extractResumeText } from "../lib/resumeTextExtractor";
+import { ensureLocalCacheUri } from "../lib/fileUtils";
 import { router } from "expo-router";
 import { FileText, Plus, Sparkles, Upload, Briefcase } from "lucide-react-native";
 import React, { useState } from "react";
@@ -119,11 +120,23 @@ export default function HomeScreen() {
 
       console.log("[onboarding] File selected:", file.name);
 
+      console.log("[onboarding] Ensuring file is in local cache...");
+      let workingUri;
+      try {
+        workingUri = await ensureLocalCacheUri(file.uri, file.name);
+        console.log("[onboarding] Working URI:", workingUri);
+      } catch (cacheErr: any) {
+        console.error("[onboarding] Failed to cache file:", cacheErr?.message);
+        Alert.alert("Error", cacheErr?.message || "Could not access file.");
+        setIsOnboarding(false);
+        return;
+      }
+
       console.log("[onboarding] Extracting text from file...");
       let extracted;
       try {
         const mimeType = file.mimeType || (file as any).type;
-        extracted = await extractResumeText(file.uri, file.name, mimeType);
+        extracted = await extractResumeText(workingUri, file.name, mimeType);
         console.log("[onboarding] Text extracted successfully, length:", extracted.text.length);
         console.log("[onboarding] Extraction source:", extracted.source);
       } catch (extractErr: any) {

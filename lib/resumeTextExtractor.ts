@@ -1,5 +1,6 @@
 import * as FileSystem from "expo-file-system/legacy";
 import { Platform } from "react-native";
+import { toByteArray } from "base64-js";
 
 export type ExtractedResumeText = {
   text: string;
@@ -32,7 +33,15 @@ function detectPDFMarkers(content: string): boolean {
   return pdfMarkers.some(marker => preview.includes(marker));
 }
 
-function getFileTypeFromUri(uri: string, mimeType?: string): "pdf" | "docx" | "doc" | "txt" | "unknown" {
+function getFileTypeFromUri(uri: string, fileName?: string, mimeType?: string): "pdf" | "docx" | "doc" | "txt" | "unknown" {
+  if (fileName) {
+    const lowerName = fileName.toLowerCase();
+    if (lowerName.endsWith('.pdf')) return "pdf";
+    if (lowerName.endsWith('.docx')) return "docx";
+    if (lowerName.endsWith('.doc')) return "doc";
+    if (lowerName.endsWith('.txt')) return "txt";
+  }
+
   if (mimeType) {
     if (mimeType === "application/pdf") return "pdf";
     if (mimeType === "application/vnd.openxmlformats-officedocument.wordprocessingml.document") return "docx";
@@ -40,8 +49,8 @@ function getFileTypeFromUri(uri: string, mimeType?: string): "pdf" | "docx" | "d
     if (mimeType === "text/plain") return "txt";
   }
 
-  const fileName = uri.split('/').pop() || '';
-  const lowerName = fileName.toLowerCase();
+  const uriFileName = uri.split('/').pop() || '';
+  const lowerName = uriFileName.toLowerCase();
   
   if (lowerName.endsWith('.pdf')) return "pdf";
   if (lowerName.endsWith('.docx')) return "docx";
@@ -230,15 +239,10 @@ async function extractDOCXLocally(uri: string): Promise<{ text: string; base64: 
           );
         }
         
-        console.log("[extractDOCX] Converting base64 to ArrayBuffer...");
+        console.log("[extractDOCX] Converting base64 to ArrayBuffer using base64-js...");
         
-        const binaryString = atob(base64);
-        const len = binaryString.length;
-        const bytes = new Uint8Array(len);
-        for (let i = 0; i < len; i++) {
-          bytes[i] = binaryString.charCodeAt(i);
-        }
-        arrayBuffer = bytes.buffer;
+        const bytes = toByteArray(base64);
+        arrayBuffer = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
         
         console.log("[extractDOCX] ArrayBuffer created, size:", arrayBuffer.byteLength);
         
@@ -249,15 +253,20 @@ async function extractDOCXLocally(uri: string): Promise<{ text: string; base64: 
           
           const startsWithPK = firstBytes[0] === 0x50 && firstBytes[1] === 0x4B;
           console.log("[extractDOCX] Starts with PK (ZIP header):", startsWithPK);
+          
+          const isValidZip = firstBytes[0] === 0x50 && firstBytes[1] === 0x4B && 
+                            firstBytes[2] === 0x03 && firstBytes[3] === 0x04;
+          console.log("[extractDOCX] Valid ZIP signature (PK 03 04):", isValidZip);
         }
         
-        const firstBytes = new Uint8Array(arrayBuffer.slice(0, 2));
-        if (firstBytes[0] !== 0x50 || firstBytes[1] !== 0x4B) {
-          console.error("[extractDOCX] INVALID FILE: Does not start with PK (ZIP header)");
-          console.error("[extractDOCX] First 2 bytes:", bytesToHex(firstBytes, 2));
+        const firstBytes = new Uint8Array(arrayBuffer.slice(0, 4));
+        if (firstBytes[0] !== 0x50 || firstBytes[1] !== 0x4B || 
+            firstBytes[2] !== 0x03 || firstBytes[3] !== 0x04) {
+          console.error("[extractDOCX] INVALID FILE: Does not start with valid ZIP signature (PK 03 04)");
+          console.error("[extractDOCX] First 4 bytes:", bytesToHex(firstBytes, 4));
           
           throw new ResumeExtractionError(
-            "This isn't a valid .docx Word file (it's likely .doc or .rtf).\n\nPlease export/save as .docx (Word 2007+) and try again."
+            "This file isn't a valid .docx Word document. Please export/save as .docx (Word 2007+) and try again."
           );
         }
       } catch (fsError: any) {
@@ -394,7 +403,7 @@ export async function extractResumeText(
   console.log("[extractResumeText] fileName:", fileName);
   console.log("[extractResumeText] mimeType:", mimeType);
   
-  const fileType = getFileTypeFromUri(uri, mimeType);
+  const fileType = getFileTypeFromUri(uri, fileName, mimeType);
   console.log("[extractResumeText] Detected file type:", fileType);
   
   let text: string;
