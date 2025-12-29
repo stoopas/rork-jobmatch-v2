@@ -13,6 +13,7 @@ import {
 import { useUserProfile } from "../../contexts/UserProfileContext";
 import { generateText } from "@rork-ai/toolkit-sdk";
 import ClarifyingQuestions, { ClarifyingQuestion } from "../../ui/components/ClarifyingQuestions";
+import { Brand } from "../../constants/brand";
 
 const MAX_QUESTIONS = 5;
 const TARGET_QUESTIONS = 4;
@@ -132,8 +133,7 @@ Return ONLY valid JSON in this format:
     };
 
     generateQuestionsOnce();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [job?.id]);
+  }, [job, profile, hasClarificationFor]);
 
   const handleComplete = () => {
     router.push({
@@ -160,10 +160,10 @@ Return ONLY valid JSON in this format:
   if (isGenerating) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#0066FF" />
-        <Text style={styles.loadingText}>Preparing a few quick questions...</Text>
+        <ActivityIndicator size="large" color={Brand.colors.accent} />
+        <Text style={styles.loadingText}>Preparing questions...</Text>
         <Text style={styles.loadingSubtext}>
-          Usually 3–5 questions to tailor your resume
+          Usually 3–4 quick confirmations
         </Text>
       </View>
     );
@@ -174,15 +174,15 @@ Return ONLY valid JSON in this format:
       <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
         <View style={styles.noQuestionsContainer}>
           <View style={styles.iconContainer}>
-            <HelpCircle size={48} color="#10B981" />
+            <HelpCircle size={48} color={Brand.colors.success} />
           </View>
-          <Text style={styles.noQuestionsTitle}>All Set!</Text>
+          <Text style={styles.noQuestionsTitle}>Ready</Text>
           <Text style={styles.noQuestionsText}>
-            Your profile has enough information for this job. No clarifying questions needed!
+            Your profile has enough information for this job
           </Text>
           <TouchableOpacity style={styles.continueButton} onPress={handleComplete}>
-            <Text style={styles.continueButtonText}>Continue to Fit Score</Text>
-            <ArrowRight size={20} color="#FFFFFF" />
+            <Text style={styles.continueButtonText}>Continue</Text>
+            <ArrowRight size={20} color={Brand.colors.surface} />
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -192,9 +192,9 @@ Return ONLY valid JSON in this format:
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
       <View style={styles.header}>
-        <Text style={styles.title}>Quick Questions</Text>
+        <Text style={styles.title}>Answer {questions.length} quick question{questions.length !== 1 ? 's' : ''}</Text>
         <Text style={styles.subtitle}>
-          Answer {questions.length} quick question{questions.length !== 1 ? 's' : ''} to tailor your resume.
+          After this, we&apos;ll generate your resume.
         </Text>
       </View>
       
@@ -205,7 +205,7 @@ Return ONLY valid JSON in this format:
       />
 
       <TouchableOpacity style={styles.skipAllButton} onPress={handleSkipAll}>
-        <Text style={styles.skipAllButtonText}>Skip All Questions</Text>
+        <Text style={styles.skipAllButtonText}>Skip All</Text>
       </TouchableOpacity>
     </ScrollView>
   );
@@ -214,7 +214,7 @@ Return ONLY valid JSON in this format:
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F8F9FA",
+    backgroundColor: Brand.colors.bg,
   },
   scrollContent: {
     flexGrow: 1,
@@ -223,109 +223,103 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#F8F9FA",
-    padding: 24,
+    backgroundColor: Brand.colors.bg,
+    padding: Brand.spacing.lg,
   },
   loadingText: {
-    fontSize: 18,
+    fontSize: Brand.typography.sizes.h3,
     fontWeight: "600" as const,
-    color: "#1A1A1A",
-    marginTop: 16,
+    color: Brand.colors.text,
+    marginTop: Brand.spacing.md,
   },
   loadingSubtext: {
-    fontSize: 14,
-    color: "#666666",
-    marginTop: 8,
+    fontSize: Brand.typography.sizes.small,
+    color: Brand.colors.textMuted,
+    marginTop: Brand.spacing.xs,
     textAlign: "center",
   },
   errorContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#F8F9FA",
-    padding: 24,
+    backgroundColor: Brand.colors.bg,
+    padding: Brand.spacing.lg,
   },
   errorText: {
-    fontSize: 16,
-    color: "#666666",
+    fontSize: Brand.typography.sizes.body,
+    color: Brand.colors.textMuted,
   },
   header: {
-    padding: 24,
+    padding: Brand.spacing.lg,
     paddingBottom: 0,
   },
   title: {
-    fontSize: 28,
-    fontWeight: "700" as const,
-    color: "#1A1A1A",
-    marginBottom: 8,
+    fontSize: Brand.typography.sizes.h2,
+    fontWeight: "600" as const,
+    color: Brand.colors.text,
+    marginBottom: Brand.spacing.xs,
   },
   subtitle: {
-    fontSize: 16,
-    color: "#666666",
-    lineHeight: 22,
-    marginBottom: 24,
+    fontSize: Brand.typography.sizes.body,
+    color: Brand.colors.textMuted,
+    lineHeight: Brand.typography.lineHeights.body,
+    marginBottom: Brand.spacing.lg,
   },
   noQuestionsContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    padding: 24,
+    padding: Brand.spacing.lg,
   },
   iconContainer: {
     width: 96,
     height: 96,
     borderRadius: 48,
-    backgroundColor: "#D1FAE5",
+    backgroundColor: Brand.colors.accentSoft,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 24,
+    marginBottom: Brand.spacing.lg,
   },
   noQuestionsTitle: {
-    fontSize: 32,
-    fontWeight: "700" as const,
-    color: "#1A1A1A",
-    marginBottom: 12,
+    fontSize: Brand.typography.sizes.h1,
+    fontWeight: "600" as const,
+    color: Brand.colors.text,
+    marginBottom: Brand.spacing.xs,
   },
   noQuestionsText: {
-    fontSize: 16,
-    color: "#666666",
+    fontSize: Brand.typography.sizes.body,
+    color: Brand.colors.textMuted,
     textAlign: "center",
-    lineHeight: 24,
-    marginBottom: 32,
-    paddingHorizontal: 16,
+    lineHeight: Brand.typography.lineHeights.body,
+    marginBottom: Brand.spacing.xl,
   },
   continueButton: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 10,
-    backgroundColor: "#0066FF",
+    gap: Brand.spacing.sm,
+    backgroundColor: Brand.colors.accent,
     paddingVertical: 16,
-    paddingHorizontal: 32,
-    borderRadius: 16,
-    shadowColor: "#0066FF",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 12,
-    elevation: 4,
+    paddingHorizontal: Brand.spacing.xl,
+    borderRadius: Brand.radius.button,
   },
   continueButtonText: {
-    fontSize: 17,
+    fontSize: Brand.typography.sizes.h3,
     fontWeight: "600" as const,
-    color: "#FFFFFF",
+    color: Brand.colors.surface,
   },
   skipAllButton: {
-    marginHorizontal: 24,
-    marginTop: 16,
-    marginBottom: 32,
+    marginHorizontal: Brand.spacing.lg,
+    marginTop: Brand.spacing.md,
+    marginBottom: Brand.spacing.xl,
     paddingVertical: 14,
-    borderRadius: 12,
+    borderRadius: Brand.radius.button,
     alignItems: "center",
-    backgroundColor: "#F0F0F0",
+    backgroundColor: Brand.colors.surfaceAlt,
   },
   skipAllButtonText: {
-    fontSize: 15,
+    fontSize: Brand.typography.sizes.body,
     fontWeight: "600" as const,
-    color: "#666666",
+    color: Brand.colors.textMuted,
   },
 });

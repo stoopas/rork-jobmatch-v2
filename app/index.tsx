@@ -2,7 +2,7 @@ import * as DocumentPicker from "expo-document-picker";
 import { extractResumeText } from "../lib/resumeTextExtractor";
 import { ensureLocalCacheUri } from "../lib/fileUtils";
 import { router } from "expo-router";
-import { FileText, Plus, Sparkles, Upload, Briefcase } from "lucide-react-native";
+import { FileText, Briefcase, Upload } from "lucide-react-native";
 import React, { useState } from "react";
 import {
   ActivityIndicator,
@@ -18,6 +18,7 @@ import { useMutation } from "@tanstack/react-query";
 
 import { useUserProfile } from "../contexts/UserProfileContext";
 import { parseResumeText, showParseSuccessAlert, type ResumeData } from "../lib/resumeParser";
+import { Brand } from "../constants/brand";
 
 export default function HomeScreen() {
   const { profile, updateProfile, isProfileComplete, addResumeAsset } = useUserProfile();
@@ -183,73 +184,39 @@ export default function HomeScreen() {
         <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
           <View style={styles.onboardingContainer}>
             <View style={styles.onboardingIconContainer}>
-              <Sparkles size={48} color="#0066FF" strokeWidth={2} />
+              <FileText size={64} color={Brand.colors.accent} strokeWidth={1.5} />
             </View>
 
-            <Text style={styles.onboardingTitle}>Welcome to JobMatch</Text>
+            <Text style={styles.onboardingTitle}>JustApply</Text>
             <Text style={styles.onboardingSubtitle}>
-              Your AI-powered resume tailoring assistant
+              Your resume, ready to apply.
             </Text>
 
             <Text style={styles.onboardingDescription}>
-              Say goodbye to the hassle of customizing resumes for every job.{"\n\n"}
-              JobMatch makes it effortless:{"\n"}
-              • Set up once with your resume{"\n"}
-              • Paste any job posting{"\n"}
-              • Get a perfectly tailored resume{"\n\n"}
-              The app learns from your answers and gets smarter over time.
+              Upload your resume once.{"\n"}
+              Paste any job posting.{"\n"}
+              Get a tailored document, ready to submit.
             </Text>
 
             <View style={styles.onboardingActionsContainer}>
-              <Text style={styles.onboardingActionsTitle}>Get Started</Text>
-
               <TouchableOpacity
                 style={styles.onboardingPrimaryButton}
                 onPress={handleUploadResume}
                 disabled={isParsingResume || isOnboarding}
               >
                 {isParsingResume || isOnboarding ? (
-                  <ActivityIndicator size="small" color="#FFFFFF" />
+                  <ActivityIndicator size="small" color={Brand.colors.surface} />
                 ) : (
-                  <Upload size={24} color="#FFFFFF" />
+                  <Upload size={22} color={Brand.colors.surface} />
                 )}
-                <View style={styles.onboardingButtonTextContainer}>
-                  <Text style={styles.onboardingPrimaryButtonText}>
-                    {isParsingResume || isOnboarding ? "Processing..." : "Upload Your Resume"}
-                  </Text>
-                  <Text style={styles.onboardingPrimaryButtonSubtext}>
-                    PDF, DOC, DOCX, or TXT
-                  </Text>
-                </View>
-              </TouchableOpacity>
-
-              <View style={styles.onboardingDivider}>
-                <View style={styles.onboardingDividerLine} />
-                <Text style={styles.onboardingDividerText}>or</Text>
-                <View style={styles.onboardingDividerLine} />
-              </View>
-
-              <TouchableOpacity
-                style={styles.onboardingSecondaryButton}
-                onPress={() => router.push("/profile/edit")}
-                disabled={isParsingResume || isOnboarding}
-              >
-                <Plus size={20} color="#0066FF" />
-                <Text style={styles.onboardingSecondaryButtonText}>
-                  Add Information Manually
+                <Text style={styles.onboardingPrimaryButtonText}>
+                  {isParsingResume || isOnboarding ? "Processing..." : "Upload your resume"}
                 </Text>
               </TouchableOpacity>
 
-              <TouchableOpacity
-                style={styles.onboardingTertiaryButton}
-                onPress={() => router.push("/chat")}
-                disabled={isParsingResume || isOnboarding}
-              >
-                <Sparkles size={20} color="#0066FF" />
-                <Text style={styles.onboardingTertiaryButtonText}>
-                  Chat with AI Assistant
-                </Text>
-              </TouchableOpacity>
+              <Text style={styles.onboardingHint}>
+                PDF, DOCX, or TXT
+              </Text>
             </View>
           </View>
         </ScrollView>
@@ -261,24 +228,21 @@ export default function HomeScreen() {
     <SafeAreaView style={styles.container} edges={["top"]}>
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
-          <View style={styles.headerContent}>
-            <Sparkles size={32} color="#0066FF" strokeWidth={2} />
-            <Text style={styles.title}>JobMatch</Text>
-          </View>
+          <Text style={styles.title}>JustApply</Text>
           <Text style={styles.subtitle}>
-            Paste a job posting. Get a tailored resume.
+            Your resume, ready to apply.
           </Text>
         </View>
 
         <View style={styles.profileCard}>
           <View style={styles.profileHeader}>
-            <FileText size={24} color="#0066FF" />
-            <Text style={styles.profileTitle}>Your Profile</Text>
+            <FileText size={20} color={Brand.colors.accent} />
+            <Text style={styles.profileTitle}>Profile</Text>
           </View>
           <View style={styles.statsContainer}>
             <View style={styles.statItem}>
               <Text style={styles.statNumber}>{profile.experience.length}</Text>
-              <Text style={styles.statLabel}>Experiences</Text>
+              <Text style={styles.statLabel}>Roles</Text>
             </View>
             <View style={styles.statDivider} />
             <View style={styles.statItem}>
@@ -295,39 +259,20 @@ export default function HomeScreen() {
             style={styles.editButton}
             onPress={() => router.push("/profile/edit")}
           >
-            <Text style={styles.editButtonText}>Edit Profile</Text>
+            <Text style={styles.editButtonText}>Edit</Text>
           </TouchableOpacity>
         </View>
 
         <View style={styles.actionsContainer}>
-          <Text style={styles.actionsTitle}>Quick Actions</Text>
-
           <TouchableOpacity
             style={styles.actionCard}
             onPress={() => router.push("/job/analyze")}
           >
-            <View style={styles.actionIconContainer}>
-              <Briefcase size={24} color="#FFFFFF" />
-            </View>
+            <Briefcase size={22} color={Brand.colors.surface} />
             <View style={styles.actionContent}>
-              <Text style={styles.actionTitle}>Paste Job Posting</Text>
+              <Text style={styles.actionTitle}>Add a job posting</Text>
               <Text style={styles.actionDescription}>
                 Get a tailored resume in seconds
-              </Text>
-            </View>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.actionCardSecondary}
-            onPress={() => router.push("/chat")}
-          >
-            <View style={styles.actionIconContainerSecondary}>
-              <Sparkles size={24} color="#0066FF" />
-            </View>
-            <View style={styles.actionContent}>
-              <Text style={styles.actionTitleSecondary}>Chat with AI</Text>
-              <Text style={styles.actionDescriptionSecondary}>
-                Improve your profile or ask questions
               </Text>
             </View>
           </TouchableOpacity>
@@ -335,7 +280,7 @@ export default function HomeScreen() {
 
         <View style={styles.footer}>
           <Text style={styles.footerText}>
-            Your data is stored securely on your device
+            Data stored securely on device
           </Text>
         </View>
       </ScrollView>
@@ -346,302 +291,182 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F8F9FA",
+    backgroundColor: Brand.colors.bg,
   },
   scrollView: {
     flex: 1,
   },
   header: {
-    paddingHorizontal: 24,
-    paddingTop: 24,
-    paddingBottom: 16,
-  },
-  headerContent: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    marginBottom: 8,
+    paddingHorizontal: Brand.spacing.lg,
+    paddingTop: Brand.spacing.xl,
+    paddingBottom: Brand.spacing.md,
   },
   title: {
-    fontSize: 32,
-    fontWeight: "700" as const,
-    color: "#1A1A1A",
-    letterSpacing: -0.5,
+    fontSize: Brand.typography.sizes.h1,
+    fontWeight: "600" as const,
+    color: Brand.colors.text,
+    marginBottom: 4,
   },
   subtitle: {
-    fontSize: 18,
-    color: "#666666",
-    lineHeight: 24,
-    fontWeight: "500" as const,
+    fontSize: Brand.typography.sizes.body,
+    color: Brand.colors.textMuted,
+    lineHeight: Brand.typography.lineHeights.body,
   },
   profileCard: {
-    marginHorizontal: 24,
-    marginTop: 16,
+    marginHorizontal: Brand.spacing.lg,
+    marginTop: Brand.spacing.md,
     padding: 20,
-    backgroundColor: "#FFFFFF",
-    borderRadius: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    backgroundColor: Brand.colors.surface,
+    borderRadius: Brand.radius.card,
+    borderWidth: 1,
+    borderColor: Brand.colors.border,
+    ...Brand.shadow,
   },
   profileHeader: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
-    marginBottom: 16,
+    gap: Brand.spacing.sm,
+    marginBottom: Brand.spacing.md,
   },
   profileTitle: {
-    fontSize: 18,
+    fontSize: Brand.typography.sizes.h3,
     fontWeight: "600" as const,
-    color: "#1A1A1A",
+    color: Brand.colors.text,
   },
   statsContainer: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-around",
-    paddingVertical: 16,
-    marginBottom: 16,
+    paddingVertical: Brand.spacing.md,
+    marginBottom: Brand.spacing.md,
   },
   statItem: {
     alignItems: "center",
     flex: 1,
   },
   statNumber: {
-    fontSize: 28,
-    fontWeight: "700" as const,
-    color: "#0066FF",
+    fontSize: 32,
+    fontWeight: "600" as const,
+    color: Brand.colors.accent,
     marginBottom: 4,
   },
   statLabel: {
-    fontSize: 13,
-    color: "#666666",
+    fontSize: Brand.typography.sizes.small,
+    color: Brand.colors.textMuted,
   },
   statDivider: {
     width: 1,
     height: 40,
-    backgroundColor: "#E5E5E5",
+    backgroundColor: Brand.colors.border,
   },
   editButton: {
-    backgroundColor: "#F0F0F0",
+    backgroundColor: Brand.colors.surfaceAlt,
     paddingVertical: 12,
-    borderRadius: 12,
+    borderRadius: Brand.radius.button,
     alignItems: "center",
   },
   editButtonText: {
-    fontSize: 15,
+    fontSize: Brand.typography.sizes.body,
     fontWeight: "600" as const,
-    color: "#1A1A1A",
+    color: Brand.colors.text,
   },
   actionsContainer: {
-    marginHorizontal: 24,
-    marginTop: 32,
-  },
-  actionsTitle: {
-    fontSize: 20,
-    fontWeight: "600" as const,
-    color: "#1A1A1A",
-    marginBottom: 16,
+    marginHorizontal: Brand.spacing.lg,
+    marginTop: Brand.spacing.xl,
   },
   actionCard: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#0066FF",
+    backgroundColor: Brand.colors.accent,
     padding: 20,
-    borderRadius: 16,
-    marginBottom: 12,
-    shadowColor: "#0066FF",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 4,
-  },
-  actionCardSecondary: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#FFFFFF",
-    padding: 20,
-    borderRadius: 16,
-    marginBottom: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 1,
-  },
-  actionIconContainer: {
-    width: 56,
-    height: 56,
-    borderRadius: 14,
-    backgroundColor: "rgba(255, 255, 255, 0.2)",
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: 16,
-  },
-  actionIconContainerSecondary: {
-    width: 56,
-    height: 56,
-    borderRadius: 14,
-    backgroundColor: "#EBF3FF",
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: 16,
+    borderRadius: Brand.radius.card,
+    gap: Brand.spacing.md,
   },
   actionContent: {
     flex: 1,
   },
   actionTitle: {
-    fontSize: 18,
+    fontSize: Brand.typography.sizes.h3,
     fontWeight: "600" as const,
-    color: "#FFFFFF",
-    marginBottom: 4,
-  },
-  actionTitleSecondary: {
-    fontSize: 18,
-    fontWeight: "600" as const,
-    color: "#1A1A1A",
+    color: Brand.colors.surface,
     marginBottom: 4,
   },
   actionDescription: {
-    fontSize: 14,
-    color: "rgba(255, 255, 255, 0.85)",
-    lineHeight: 20,
-  },
-  actionDescriptionSecondary: {
-    fontSize: 14,
-    color: "#666666",
-    lineHeight: 20,
+    fontSize: Brand.typography.sizes.small,
+    color: Brand.colors.surface,
+    opacity: 0.85,
+    lineHeight: Brand.typography.lineHeights.small,
   },
   footer: {
-    marginHorizontal: 24,
-    marginTop: 32,
-    marginBottom: 24,
+    marginHorizontal: Brand.spacing.lg,
+    marginTop: Brand.spacing.xl,
+    marginBottom: Brand.spacing.lg,
     alignItems: "center",
   },
   footerText: {
-    fontSize: 13,
-    color: "#999999",
+    fontSize: Brand.typography.sizes.small,
+    color: Brand.colors.textFaint,
   },
   onboardingContainer: {
     flex: 1,
-    paddingHorizontal: 24,
-    paddingTop: 32,
+    paddingHorizontal: Brand.spacing.lg,
+    paddingTop: 60,
     paddingBottom: 48,
+    alignItems: "center",
   },
   onboardingIconContainer: {
-    width: 96,
-    height: 96,
-    borderRadius: 24,
-    backgroundColor: "#EBF3FF",
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: Brand.colors.accentSoft,
     alignItems: "center",
     justifyContent: "center",
-    alignSelf: "center",
-    marginBottom: 24,
+    marginBottom: Brand.spacing.xl,
   },
   onboardingTitle: {
-    fontSize: 32,
-    fontWeight: "700" as const,
-    color: "#1A1A1A",
+    fontSize: 36,
+    fontWeight: "600" as const,
+    color: Brand.colors.text,
     textAlign: "center",
-    marginBottom: 12,
-    letterSpacing: -0.5,
+    marginBottom: 8,
   },
   onboardingSubtitle: {
-    fontSize: 18,
+    fontSize: Brand.typography.sizes.h3,
     fontWeight: "500" as const,
-    color: "#666666",
+    color: Brand.colors.textMuted,
     textAlign: "center",
-    marginBottom: 32,
+    marginBottom: Brand.spacing.xl,
   },
   onboardingDescription: {
-    fontSize: 16,
-    color: "#666666",
-    lineHeight: 26,
-    marginBottom: 40,
+    fontSize: Brand.typography.sizes.body,
+    color: Brand.colors.textMuted,
+    lineHeight: 28,
+    marginBottom: 48,
+    textAlign: "center",
   },
   onboardingActionsContainer: {
-    marginTop: 8,
-  },
-  onboardingActionsTitle: {
-    fontSize: 20,
-    fontWeight: "600" as const,
-    color: "#1A1A1A",
-    marginBottom: 20,
+    width: "100%",
+    maxWidth: 400,
   },
   onboardingPrimaryButton: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#0066FF",
-    paddingVertical: 20,
-    paddingHorizontal: 24,
-    borderRadius: 16,
-    gap: 16,
-    shadowColor: "#0066FF",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 8,
-  },
-  onboardingButtonTextContainer: {
-    flex: 1,
+    justifyContent: "center",
+    backgroundColor: Brand.colors.accent,
+    paddingVertical: 18,
+    paddingHorizontal: 18,
+    borderRadius: Brand.radius.button,
+    gap: Brand.spacing.sm,
   },
   onboardingPrimaryButtonText: {
-    fontSize: 17,
-    fontWeight: "700" as const,
-    color: "#FFFFFF",
-    marginBottom: 4,
-  },
-  onboardingPrimaryButtonSubtext: {
-    fontSize: 13,
-    color: "#FFFFFF",
-    opacity: 0.9,
-  },
-  onboardingDivider: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginVertical: 24,
-    gap: 12,
-  },
-  onboardingDividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: "#E5E5E5",
-  },
-  onboardingDividerText: {
-    fontSize: 14,
-    color: "#999999",
-    fontWeight: "500" as const,
-  },
-  onboardingSecondaryButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 10,
-    backgroundColor: "#EBF3FF",
-    paddingVertical: 16,
-    paddingHorizontal: 24,
-    borderRadius: 12,
-    marginBottom: 12,
-  },
-  onboardingSecondaryButtonText: {
-    fontSize: 16,
+    fontSize: Brand.typography.sizes.h3,
     fontWeight: "600" as const,
-    color: "#0066FF",
+    color: Brand.colors.surface,
   },
-  onboardingTertiaryButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 10,
-    backgroundColor: "#F0F0F0",
-    paddingVertical: 16,
-    paddingHorizontal: 24,
-    borderRadius: 12,
-  },
-  onboardingTertiaryButtonText: {
-    fontSize: 16,
-    fontWeight: "600" as const,
-    color: "#0066FF",
+  onboardingHint: {
+    fontSize: Brand.typography.sizes.small,
+    color: Brand.colors.textMuted,
+    textAlign: "center",
+    marginTop: Brand.spacing.md,
   },
 });

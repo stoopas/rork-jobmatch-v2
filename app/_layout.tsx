@@ -6,6 +6,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { StyleSheet, ActivityIndicator, View } from "react-native";
 
 import { UserProfileProvider, useUserProfile } from "../contexts/UserProfileContext";
+import { Brand } from "../constants/brand";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -30,7 +31,7 @@ function RootLayoutNav() {
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#0066FF" />
+        <ActivityIndicator size="large" color={Brand.colors.accent} />
       </View>
     );
   }
@@ -40,7 +41,7 @@ function RootLayoutNav() {
       <Stack.Screen
         name="index"
         options={{
-          title: "JobMatch",
+          title: "JustApply",
           headerShown: false,
         }}
       />
@@ -54,14 +55,14 @@ function RootLayoutNav() {
       <Stack.Screen
         name="job/analyze"
         options={{
-          title: "Analyze Job",
+          title: "Add Job",
           headerLargeTitle: false,
         }}
       />
       <Stack.Screen
         name="job/clarify"
         options={{
-          title: "Quick Resume Questions",
+          title: "Quick Questions",
           headerLargeTitle: false,
         }}
       />
@@ -73,9 +74,16 @@ function RootLayoutNav() {
         }}
       />
       <Stack.Screen
+        name="resume/options"
+        options={{
+          title: "Resume Format",
+          headerLargeTitle: false,
+        }}
+      />
+      <Stack.Screen
         name="resume/generate"
         options={{
-          title: "Generate Resume",
+          title: "Resume Ready",
           headerLargeTitle: false,
         }}
       />
@@ -110,6 +118,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#F8F9FA",
+    backgroundColor: Brand.colors.bg,
   },
 });

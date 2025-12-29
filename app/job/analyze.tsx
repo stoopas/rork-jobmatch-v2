@@ -1,5 +1,5 @@
 import { router } from "expo-router";
-import { Briefcase, Sparkles } from "lucide-react-native";
+import { Briefcase } from "lucide-react-native";
 import React, { useState } from "react";
 import {
   ActivityIndicator,
@@ -17,6 +17,7 @@ import {
 import { useUserProfile } from "../../contexts/UserProfileContext";
 import { generateText } from "@rork-ai/toolkit-sdk";
 import type { JobPosting } from "../../types/profile";
+import { Brand } from "../../constants/brand";
 
 export default function AnalyzeJobScreen() {
   const { profile, addJobPosting, getResumeAssets } = useUserProfile();
@@ -112,32 +113,23 @@ Return only valid JSON, no additional text.`,
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.header}>
-          <View style={styles.iconContainer}>
-            <Briefcase size={32} color="#0066FF" />
-          </View>
-          <Text style={styles.title}>Analyze Job Posting</Text>
+          <Briefcase size={40} color={Brand.colors.accent} strokeWidth={1.5} />
+          <Text style={styles.title}>Add a job posting</Text>
           <Text style={styles.subtitle}>
-            Paste a job description below and I&apos;ll analyze how well you fit the
-            role based on your profile.
+            Paste the job description and we&apos;ll prepare your tailored resume
           </Text>
         </View>
 
         <View style={styles.inputContainer}>
           <TextInput
             style={styles.textArea}
-            placeholder="Paste job posting here...&#10;&#10;Include the job title, requirements, responsibilities, and any other relevant details."
+            placeholder="Paste job posting here..."
             value={jobText}
             onChangeText={setJobText}
             multiline
-            placeholderTextColor="#999999"
+            placeholderTextColor={Brand.colors.textFaint}
             editable={!isAnalyzing}
           />
-          <View style={styles.inputFooter}>
-            <View style={styles.aiIndicator}>
-              <Sparkles size={16} color="#0066FF" />
-              <Text style={styles.aiText}>AI-Powered Analysis</Text>
-            </View>
-          </View>
         </View>
 
         <TouchableOpacity
@@ -147,38 +139,13 @@ Return only valid JSON, no additional text.`,
         >
           {isAnalyzing ? (
             <>
-              <ActivityIndicator color="#FFFFFF" size="small" />
+              <ActivityIndicator color={Brand.colors.surface} size="small" />
               <Text style={styles.analyzeButtonText}>Analyzing...</Text>
             </>
           ) : (
-            <>
-              <Sparkles size={20} color="#FFFFFF" />
-              <Text style={styles.analyzeButtonText}>Analyze Fit</Text>
-            </>
+            <Text style={styles.analyzeButtonText}>Continue</Text>
           )}
         </TouchableOpacity>
-
-        <View style={styles.tipsCard}>
-          <Text style={styles.tipsTitle}>Tips for Best Results</Text>
-          <View style={styles.tipItem}>
-            <Text style={styles.tipBullet}>•</Text>
-            <Text style={styles.tipText}>
-              Include the full job description with requirements
-            </Text>
-          </View>
-          <View style={styles.tipItem}>
-            <Text style={styles.tipBullet}>•</Text>
-            <Text style={styles.tipText}>
-              Make sure your profile is complete with experience and skills
-            </Text>
-          </View>
-          <View style={styles.tipItem}>
-            <Text style={styles.tipBullet}>•</Text>
-            <Text style={styles.tipText}>
-              The more details in both, the better the analysis
-            </Text>
-          </View>
-        </View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -187,127 +154,62 @@ Return only valid JSON, no additional text.`,
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F8F9FA",
+    backgroundColor: Brand.colors.bg,
   },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
-    padding: 24,
+    padding: Brand.spacing.lg,
   },
   header: {
     alignItems: "center",
-    marginBottom: 32,
-  },
-  iconContainer: {
-    width: 64,
-    height: 64,
-    borderRadius: 16,
-    backgroundColor: "#EBF3FF",
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 16,
+    marginBottom: Brand.spacing.xl,
   },
   title: {
-    fontSize: 28,
-    fontWeight: "700" as const,
-    color: "#1A1A1A",
-    marginBottom: 8,
+    fontSize: Brand.typography.sizes.h2,
+    fontWeight: "600" as const,
+    color: Brand.colors.text,
+    marginTop: Brand.spacing.md,
+    marginBottom: Brand.spacing.xs,
     textAlign: "center",
   },
   subtitle: {
-    fontSize: 16,
-    color: "#666666",
+    fontSize: Brand.typography.sizes.body,
+    color: Brand.colors.textMuted,
     textAlign: "center",
-    lineHeight: 22,
-    paddingHorizontal: 16,
+    lineHeight: Brand.typography.lineHeights.body,
   },
   inputContainer: {
-    marginBottom: 24,
+    marginBottom: Brand.spacing.lg,
   },
   textArea: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: Brand.colors.surface,
     padding: 20,
-    borderRadius: 16,
-    fontSize: 16,
-    color: "#1A1A1A",
+    borderRadius: Brand.radius.input,
+    fontSize: Brand.typography.sizes.body,
+    color: Brand.colors.text,
     minHeight: 300,
     textAlignVertical: "top",
-    borderWidth: 2,
-    borderColor: "#E5E5E5",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  inputFooter: {
-    marginTop: 12,
-  },
-  aiIndicator: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  aiText: {
-    fontSize: 13,
-    fontWeight: "500" as const,
-    color: "#0066FF",
+    borderWidth: 1,
+    borderColor: Brand.colors.border,
+    ...Brand.shadow,
   },
   analyzeButton: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 10,
-    backgroundColor: "#0066FF",
+    gap: Brand.spacing.sm,
+    backgroundColor: Brand.colors.accent,
     paddingVertical: 18,
-    borderRadius: 16,
-    marginBottom: 24,
-    shadowColor: "#0066FF",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 12,
-    elevation: 4,
+    borderRadius: Brand.radius.button,
   },
   buttonDisabled: {
-    opacity: 0.6,
+    opacity: 0.5,
   },
   analyzeButtonText: {
-    fontSize: 17,
+    fontSize: Brand.typography.sizes.h3,
     fontWeight: "600" as const,
-    color: "#FFFFFF",
-  },
-  tipsCard: {
-    backgroundColor: "#FFFFFF",
-    padding: 20,
-    borderRadius: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  tipsTitle: {
-    fontSize: 16,
-    fontWeight: "600" as const,
-    color: "#1A1A1A",
-    marginBottom: 12,
-  },
-  tipItem: {
-    flexDirection: "row",
-    marginBottom: 8,
-    paddingRight: 16,
-  },
-  tipBullet: {
-    fontSize: 16,
-    color: "#0066FF",
-    marginRight: 8,
-    fontWeight: "700" as const,
-  },
-  tipText: {
-    flex: 1,
-    fontSize: 14,
-    color: "#666666",
-    lineHeight: 20,
+    color: Brand.colors.surface,
   },
 });
