@@ -22,7 +22,7 @@ import {
 import { useUserProfile } from "../../contexts/UserProfileContext";
 import { generateText } from "@rork-ai/toolkit-sdk";
 import type { FitScore } from "../../types/profile";
-import { Brand } from "../../constants/brand";
+import { BoringAI } from "../../ui/theme/boringAiTheme";
 
 export default function FitScoreScreen() {
   const { jobId } = useLocalSearchParams<{ jobId: string }>();
@@ -149,10 +149,10 @@ Return ONLY valid JSON in this exact format:
   }, [job, analyzeFit]);
 
   const getScoreColor = (score: number) => {
-    if (score >= 90) return Brand.colors.success;
-    if (score >= 75) return Brand.colors.accent;
-    if (score >= 50) return Brand.colors.warning;
-    return Brand.colors.danger;
+    if (score >= 90) return BoringAI.colors.success;
+    if (score >= 75) return BoringAI.colors.text;
+    if (score >= 50) return BoringAI.colors.warning;
+    return BoringAI.colors.danger;
   };
 
   const getScoreLabel = (score: number) => {
@@ -173,7 +173,7 @@ Return ONLY valid JSON in this exact format:
   if (isAnalyzing) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={Brand.colors.accent} />
+        <ActivityIndicator size="large" color={BoringAI.colors.accent} />
         <Text style={styles.loadingText}>Analyzing your fit...</Text>
         <Text style={styles.loadingSubtext}>
           Comparing your profile with job requirements
@@ -257,7 +257,7 @@ Return ONLY valid JSON in this exact format:
         </View>
 
         <ScoreDimension
-          icon={<Briefcase size={20} color={Brand.colors.textMuted} />}
+          icon={<Briefcase size={20} color={BoringAI.colors.textMuted} />}
           title="Experience Alignment"
           score={fitScore.experienceAlignment}
           rationale={fitScore.rationale.experienceAlignment}
@@ -266,7 +266,7 @@ Return ONLY valid JSON in this exact format:
         />
 
         <ScoreDimension
-          icon={<Target size={20} color={Brand.colors.textMuted} />}
+          icon={<Target size={20} color={BoringAI.colors.textMuted} />}
           title="Technical Skill Match"
           score={fitScore.technicalSkillMatch}
           rationale={fitScore.rationale.technicalSkillMatch}
@@ -275,7 +275,7 @@ Return ONLY valid JSON in this exact format:
         />
 
         <ScoreDimension
-          icon={<Award size={20} color={Brand.colors.textMuted} />}
+          icon={<Award size={20} color={BoringAI.colors.textMuted} />}
           title="Domain Relevance"
           score={fitScore.domainRelevance}
           rationale={fitScore.rationale.domainRelevance}
@@ -284,7 +284,7 @@ Return ONLY valid JSON in this exact format:
         />
 
         <ScoreDimension
-          icon={<Users size={20} color={Brand.colors.textMuted} />}
+          icon={<Users size={20} color={BoringAI.colors.textMuted} />}
           title="Stage/Cultural Fit"
           score={fitScore.stageCulturalFit}
           rationale={fitScore.rationale.stageCulturalFit}
@@ -293,7 +293,7 @@ Return ONLY valid JSON in this exact format:
         />
 
         <ScoreDimension
-          icon={<TrendingUp size={20} color={Brand.colors.textMuted} />}
+          icon={<TrendingUp size={20} color={BoringAI.colors.textMuted} />}
           title="Impact Potential"
           score={fitScore.impactPotential}
           rationale={fitScore.rationale.impactPotential}
@@ -312,7 +312,7 @@ Return ONLY valid JSON in this exact format:
             })
           }
         >
-          <FileText size={20} color="#0B0F14" />
+          <FileText size={20} color={BoringAI.colors.background} />
           <Text style={styles.generateButtonText}>Generate Resume</Text>
         </TouchableOpacity>
       )}
@@ -345,9 +345,9 @@ function ScoreDimension({
   onToggle: () => void;
 }) {
   const getBarColor = (score: number) => {
-    if (score >= 75) return Brand.colors.success;
-    if (score >= 50) return Brand.colors.warning;
-    return Brand.colors.danger;
+    if (score >= 75) return BoringAI.colors.success;
+    if (score >= 50) return BoringAI.colors.warning;
+    return BoringAI.colors.danger;
   };
 
   return (
@@ -386,164 +386,167 @@ function ScoreDimension({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Brand.colors.bg,
+    backgroundColor: BoringAI.colors.background,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: Brand.colors.bg,
-    padding: Brand.spacing.lg,
+    backgroundColor: BoringAI.colors.background,
+    padding: BoringAI.spacing.xl,
   },
   loadingText: {
-    fontSize: Brand.typography.sizes.h3,
-    fontWeight: "600" as const,
-    color: Brand.colors.text,
-    marginTop: Brand.spacing.md,
+    fontSize: 18,
+    fontWeight: "700" as const,
+    color: BoringAI.colors.text,
+    marginTop: BoringAI.spacing.md,
   },
   loadingSubtext: {
-    fontSize: Brand.typography.sizes.small,
-    color: Brand.colors.textMuted,
-    marginTop: Brand.spacing.xs,
+    fontSize: 13,
+    color: BoringAI.colors.textMuted,
+    marginTop: BoringAI.spacing.xs,
   },
   errorContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: Brand.colors.bg,
-    padding: Brand.spacing.lg,
+    backgroundColor: BoringAI.colors.background,
+    padding: BoringAI.spacing.xl,
   },
   errorText: {
-    fontSize: Brand.typography.sizes.body,
-    color: Brand.colors.textMuted,
-    marginBottom: Brand.spacing.md,
+    fontSize: 16,
+    color: BoringAI.colors.textMuted,
+    marginBottom: BoringAI.spacing.md,
   },
   retryButton: {
-    backgroundColor: Brand.colors.accent,
+    backgroundColor: BoringAI.colors.accent,
     paddingVertical: 12,
-    paddingHorizontal: Brand.spacing.lg,
-    borderRadius: Brand.radius.button,
+    paddingHorizontal: BoringAI.spacing.lg,
+    borderRadius: BoringAI.radius.button,
   },
   retryButtonText: {
-    fontSize: Brand.typography.sizes.body,
+    fontSize: 16,
     fontWeight: "600" as const,
-    color: "#0B0F14",
+    color: BoringAI.colors.background,
   },
   header: {
-    padding: Brand.spacing.lg,
-    paddingBottom: Brand.spacing.md,
+    padding: BoringAI.spacing.xl,
+    paddingBottom: BoringAI.spacing.md,
   },
   jobInfo: {
     alignItems: "center",
   },
   jobTitle: {
-    fontSize: Brand.typography.sizes.h1,
-    fontWeight: "600" as const,
-    color: Brand.colors.text,
+    fontSize: 28,
+    fontWeight: "700" as const,
+    color: BoringAI.colors.text,
     textAlign: "center",
-    marginBottom: Brand.spacing.xs,
+    marginBottom: BoringAI.spacing.xs,
+    letterSpacing: -0.2,
   },
   jobCompany: {
-    fontSize: Brand.typography.sizes.body,
-    color: Brand.colors.textMuted,
+    fontSize: 16,
+    color: BoringAI.colors.textMuted,
     textAlign: "center",
   },
   scoreCard: {
-    marginHorizontal: Brand.spacing.lg,
-    padding: Brand.spacing.xl,
-    backgroundColor: Brand.colors.surface,
-    borderRadius: Brand.radius.card,
-    borderWidth: 1,
-    borderColor: Brand.colors.border,
+    marginHorizontal: BoringAI.spacing.xl,
+    padding: BoringAI.spacing.xxl,
+    backgroundColor: BoringAI.colors.surface,
+    borderRadius: BoringAI.radius.card,
+    borderWidth: BoringAI.border.hairline,
+    borderColor: BoringAI.colors.border,
     alignItems: "center",
+    ...BoringAI.shadow.cardShadow,
   },
   scoreHeader: {
     flexDirection: "row",
     alignItems: "center",
-    gap: Brand.spacing.sm,
-    marginBottom: Brand.spacing.lg,
+    gap: BoringAI.spacing.sm,
+    marginBottom: BoringAI.spacing.lg,
   },
   scoreTitle: {
-    fontSize: Brand.typography.sizes.h3,
-    fontWeight: "600" as const,
-    color: Brand.colors.text,
+    fontSize: 18,
+    fontWeight: "700" as const,
+    color: BoringAI.colors.text,
   },
   scoreCircle: {
     alignItems: "center",
-    marginBottom: Brand.spacing.md,
+    marginBottom: BoringAI.spacing.md,
   },
   scoreNumber: {
     fontSize: 64,
-    fontWeight: "600" as const,
+    fontWeight: "700" as const,
     lineHeight: 72,
   },
   scoreOutOf: {
     fontSize: 20,
-    color: Brand.colors.textFaint,
+    color: BoringAI.colors.textFaint,
     marginTop: -8,
   },
   scoreBadge: {
-    paddingVertical: Brand.spacing.sm,
-    paddingHorizontal: Brand.spacing.lg,
-    borderRadius: Brand.radius.pill,
+    paddingVertical: BoringAI.spacing.sm,
+    paddingHorizontal: BoringAI.spacing.lg,
+    borderRadius: BoringAI.radius.pill,
   },
   scoreBadgeText: {
-    fontSize: Brand.typography.sizes.body,
+    fontSize: 16,
     fontWeight: "600" as const,
   },
   section: {
-    padding: Brand.spacing.lg,
+    padding: BoringAI.spacing.xl,
   },
   sectionHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: Brand.spacing.md,
+    marginBottom: BoringAI.spacing.md,
   },
   sectionTitle: {
-    fontSize: Brand.typography.sizes.h2,
-    fontWeight: "600" as const,
-    color: Brand.colors.text,
+    fontSize: 22,
+    fontWeight: "700" as const,
+    color: BoringAI.colors.text,
+    letterSpacing: -0.1,
   },
   expandAllText: {
-    fontSize: Brand.typography.sizes.small,
+    fontSize: 13,
     fontWeight: "600" as const,
-    color: Brand.colors.accent,
+    color: BoringAI.colors.text,
   },
   dimensionCard: {
-    backgroundColor: Brand.colors.surface,
-    padding: Brand.spacing.lg,
-    borderRadius: Brand.radius.card,
-    borderWidth: 1,
-    borderColor: Brand.colors.border,
-    marginBottom: Brand.spacing.md,
+    backgroundColor: BoringAI.colors.surface,
+    padding: BoringAI.spacing.lg,
+    borderRadius: BoringAI.radius.card,
+    borderWidth: BoringAI.border.hairline,
+    borderColor: BoringAI.colors.border,
+    marginBottom: BoringAI.spacing.md,
   },
   dimensionHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: Brand.spacing.sm,
+    marginBottom: BoringAI.spacing.sm,
   },
   dimensionTitleContainer: {
     flexDirection: "row",
     alignItems: "center",
-    gap: Brand.spacing.sm,
+    gap: BoringAI.spacing.sm,
     flex: 1,
   },
   dimensionTitle: {
-    fontSize: Brand.typography.sizes.body,
+    fontSize: 16,
     fontWeight: "600" as const,
-    color: Brand.colors.text,
+    color: BoringAI.colors.text,
   },
   dimensionScore: {
-    fontSize: Brand.typography.sizes.h2,
-    fontWeight: "600" as const,
+    fontSize: 22,
+    fontWeight: "700" as const,
   },
   progressBar: {
     height: 6,
-    backgroundColor: Brand.colors.surfaceAlt,
+    backgroundColor: BoringAI.colors.surfaceAlt,
     borderRadius: 3,
-    marginBottom: Brand.spacing.sm,
+    marginBottom: BoringAI.spacing.sm,
     overflow: "hidden",
   },
   progressFill: {
@@ -551,55 +554,55 @@ const styles = StyleSheet.create({
     borderRadius: 3,
   },
   rationaleContainer: {
-    marginTop: Brand.spacing.sm,
-    paddingTop: Brand.spacing.sm,
+    marginTop: BoringAI.spacing.sm,
+    paddingTop: BoringAI.spacing.sm,
     borderTopWidth: 1,
-    borderTopColor: Brand.colors.border,
+    borderTopColor: BoringAI.colors.border,
   },
   dimensionRationale: {
-    fontSize: Brand.typography.sizes.small,
-    color: Brand.colors.textMuted,
-    lineHeight: Brand.typography.lineHeights.small,
+    fontSize: 13,
+    color: BoringAI.colors.textMuted,
+    lineHeight: 18,
   },
   expandIndicator: {
-    marginTop: Brand.spacing.xs,
+    marginTop: BoringAI.spacing.xs,
     alignItems: "center",
   },
   expandText: {
-    fontSize: Brand.typography.sizes.micro,
-    color: Brand.colors.textFaint,
+    fontSize: 11,
+    color: BoringAI.colors.textFaint,
     fontStyle: "italic" as const,
   },
   generateButton: {
-    marginHorizontal: Brand.spacing.lg,
-    marginTop: Brand.spacing.sm,
+    marginHorizontal: BoringAI.spacing.xl,
+    marginTop: BoringAI.spacing.sm,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: Brand.spacing.sm,
-    backgroundColor: Brand.colors.accent,
-    paddingVertical: Brand.spacing.md,
-    borderRadius: Brand.radius.button,
+    gap: BoringAI.spacing.sm,
+    backgroundColor: BoringAI.colors.accent,
+    paddingVertical: BoringAI.spacing.md,
+    borderRadius: BoringAI.radius.button,
   },
   generateButtonText: {
-    fontSize: Brand.typography.sizes.h3,
+    fontSize: 18,
     fontWeight: "600" as const,
-    color: "#0B0F14",
+    color: BoringAI.colors.background,
   },
   backButton: {
-    marginHorizontal: Brand.spacing.lg,
-    marginTop: Brand.spacing.md,
+    marginHorizontal: BoringAI.spacing.xl,
+    marginTop: BoringAI.spacing.md,
     paddingVertical: 14,
-    borderRadius: Brand.radius.button,
+    borderRadius: BoringAI.radius.button,
     alignItems: "center",
-    backgroundColor: Brand.colors.surfaceAlt,
-    borderWidth: 1,
-    borderColor: Brand.colors.border,
+    backgroundColor: BoringAI.colors.surface,
+    borderWidth: BoringAI.border.hairline,
+    borderColor: BoringAI.colors.border,
   },
   backButtonText: {
-    fontSize: Brand.typography.sizes.body,
+    fontSize: 16,
     fontWeight: "600" as const,
-    color: Brand.colors.text,
+    color: BoringAI.colors.text,
   },
   bottomPadding: {
     height: 40,

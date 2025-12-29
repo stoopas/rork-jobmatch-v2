@@ -13,7 +13,7 @@ import {
 import { useUserProfile } from "../../contexts/UserProfileContext";
 import { generateText } from "@rork-ai/toolkit-sdk";
 import ClarifyingQuestions, { ClarifyingQuestion } from "../../ui/components/ClarifyingQuestions";
-import { Brand } from "../../constants/brand";
+import { BoringAI } from "../../ui/theme/boringAiTheme";
 
 const MAX_QUESTIONS = 5;
 const TARGET_QUESTIONS = 4;
@@ -160,7 +160,7 @@ Return ONLY valid JSON in this format:
   if (isGenerating) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={Brand.colors.accent} />
+        <ActivityIndicator size="large" color={BoringAI.colors.accent} />
         <Text style={styles.loadingText}>Preparing questions...</Text>
         <Text style={styles.loadingSubtext}>
           Usually 3–4 quick confirmations
@@ -174,7 +174,7 @@ Return ONLY valid JSON in this format:
       <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
         <View style={styles.noQuestionsContainer}>
           <View style={styles.iconContainer}>
-            <HelpCircle size={48} color={Brand.colors.success} />
+            <HelpCircle size={48} color={BoringAI.colors.success} />
           </View>
           <Text style={styles.noQuestionsTitle}>Ready</Text>
           <Text style={styles.noQuestionsText}>
@@ -182,7 +182,7 @@ Return ONLY valid JSON in this format:
           </Text>
           <TouchableOpacity style={styles.continueButton} onPress={handleComplete}>
             <Text style={styles.continueButtonText}>Continue</Text>
-            <ArrowRight size={20} color="#0B0F14" />
+            <ArrowRight size={20} color={BoringAI.colors.background} />
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -214,7 +214,7 @@ Return ONLY valid JSON in this format:
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Brand.colors.bg,
+    backgroundColor: BoringAI.colors.background,
   },
   scrollContent: {
     flexGrow: 1,
@@ -223,103 +223,109 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: Brand.colors.bg,
-    padding: Brand.spacing.lg,
+    backgroundColor: BoringAI.colors.background,
+    padding: BoringAI.spacing.xl,
   },
   loadingText: {
-    fontSize: Brand.typography.sizes.h3,
-    fontWeight: "600" as const,
-    color: Brand.colors.text,
-    marginTop: Brand.spacing.md,
+    fontSize: 18,
+    fontWeight: "700" as const,
+    color: BoringAI.colors.text,
+    marginTop: BoringAI.spacing.md,
   },
   loadingSubtext: {
-    fontSize: Brand.typography.sizes.small,
-    color: Brand.colors.textMuted,
-    marginTop: Brand.spacing.xs,
+    fontSize: 13,
+    color: BoringAI.colors.textMuted,
+    marginTop: BoringAI.spacing.xs,
     textAlign: "center",
   },
   errorContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: Brand.colors.bg,
-    padding: Brand.spacing.lg,
+    backgroundColor: BoringAI.colors.background,
+    padding: BoringAI.spacing.xl,
   },
   errorText: {
-    fontSize: Brand.typography.sizes.body,
-    color: Brand.colors.textMuted,
+    fontSize: 16,
+    color: BoringAI.colors.textMuted,
   },
   header: {
-    padding: Brand.spacing.lg,
+    padding: BoringAI.spacing.xl,
     paddingBottom: 0,
   },
   title: {
-    fontSize: Brand.typography.sizes.h2,
-    fontWeight: "600" as const,
-    color: Brand.colors.text,
-    marginBottom: Brand.spacing.xs,
+    fontSize: 22,
+    fontWeight: "700" as const,
+    color: BoringAI.colors.text,
+    marginBottom: BoringAI.spacing.xs,
+    letterSpacing: -0.1,
   },
   subtitle: {
-    fontSize: Brand.typography.sizes.body,
-    color: Brand.colors.textMuted,
-    lineHeight: Brand.typography.lineHeights.body,
-    marginBottom: Brand.spacing.lg,
+    fontSize: 16,
+    color: BoringAI.colors.textMuted,
+    lineHeight: 22,
+    marginBottom: BoringAI.spacing.lg,
   },
   noQuestionsContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    padding: Brand.spacing.lg,
+    padding: BoringAI.spacing.xl,
   },
   iconContainer: {
     width: 96,
     height: 96,
     borderRadius: 48,
-    backgroundColor: Brand.colors.accentSoft,
+    backgroundColor: BoringAI.colors.surfaceAlt,
+    borderWidth: BoringAI.border.hairline,
+    borderColor: BoringAI.colors.border,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: Brand.spacing.lg,
+    marginBottom: BoringAI.spacing.lg,
   },
   noQuestionsTitle: {
-    fontSize: Brand.typography.sizes.h1,
-    fontWeight: "600" as const,
-    color: Brand.colors.text,
-    marginBottom: Brand.spacing.xs,
+    fontSize: 28,
+    fontWeight: "700" as const,
+    color: BoringAI.colors.text,
+    marginBottom: BoringAI.spacing.xs,
+    letterSpacing: -0.2,
   },
   noQuestionsText: {
-    fontSize: Brand.typography.sizes.body,
-    color: Brand.colors.textMuted,
+    fontSize: 16,
+    color: BoringAI.colors.textMuted,
     textAlign: "center",
-    lineHeight: Brand.typography.lineHeights.body,
-    marginBottom: Brand.spacing.xl,
+    lineHeight: 22,
+    marginBottom: BoringAI.spacing.xxl,
   },
   continueButton: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: Brand.spacing.sm,
-    backgroundColor: Brand.colors.accent,
+    gap: BoringAI.spacing.sm,
+    backgroundColor: BoringAI.colors.accent,
     paddingVertical: 16,
-    paddingHorizontal: Brand.spacing.xl,
-    borderRadius: Brand.radius.button,
+    paddingHorizontal: BoringAI.spacing.xxl,
+    borderRadius: BoringAI.radius.button,
   },
   continueButtonText: {
-    fontSize: Brand.typography.sizes.h3,
+    fontSize: 18,
     fontWeight: "600" as const,
-    color: "#0B0F14",
+    color: BoringAI.colors.background,
   },
   skipAllButton: {
-    marginHorizontal: Brand.spacing.lg,
-    marginTop: Brand.spacing.md,
-    marginBottom: Brand.spacing.xl,
+    marginHorizontal: BoringAI.spacing.xl,
+    marginTop: BoringAI.spacing.md,
+    marginBottom: BoringAI.spacing.xxl,
     paddingVertical: 14,
-    borderRadius: Brand.radius.button,
+    borderRadius: BoringAI.radius.button,
     alignItems: "center",
-    backgroundColor: Brand.colors.surfaceAlt,
+    backgroundColor: BoringAI.colors.surface,
+    borderWidth: BoringAI.border.hairline,
+    borderColor: BoringAI.colors.border,
   },
   skipAllButtonText: {
-    fontSize: Brand.typography.sizes.body,
+    fontSize: 16,
     fontWeight: "600" as const,
-    color: Brand.colors.textMuted,
+    color: BoringAI.colors.textMuted,
   },
 });

@@ -18,7 +18,7 @@ import { useMutation } from "@tanstack/react-query";
 
 import { useUserProfile } from "../contexts/UserProfileContext";
 import { parseResumeText, showParseSuccessAlert, type ResumeData } from "../lib/resumeParser";
-import { Brand } from "../constants/brand";
+import { BoringAI } from "../ui/theme/boringAiTheme";
 
 export default function HomeScreen() {
   const { profile, updateProfile, isProfileComplete, addResumeAsset } = useUserProfile();
@@ -184,7 +184,7 @@ export default function HomeScreen() {
         <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
           <View style={styles.onboardingContainer}>
             <View style={styles.onboardingIconContainer}>
-              <FileText size={64} color={Brand.colors.accent} strokeWidth={1} />
+              <FileText size={64} color={BoringAI.colors.text} strokeWidth={1.5} />
             </View>
 
             <Text style={styles.onboardingTitle}>JustApply</Text>
@@ -205,9 +205,9 @@ export default function HomeScreen() {
                 disabled={isParsingResume || isOnboarding}
               >
                 {isParsingResume || isOnboarding ? (
-                  <ActivityIndicator size="small" color={Brand.colors.surface} />
+                  <ActivityIndicator size="small" color={BoringAI.colors.background} />
                 ) : (
-                  <Upload size={22} color="#0B0F14" />
+                  <Upload size={22} color={BoringAI.colors.background} />
                 )}
                 <Text style={styles.onboardingPrimaryButtonText}>
                   {isParsingResume || isOnboarding ? "Processing..." : "Upload your resume"}
@@ -236,7 +236,7 @@ export default function HomeScreen() {
 
         <View style={styles.profileCard}>
           <View style={styles.profileHeader}>
-            <FileText size={20} color={Brand.colors.textMuted} />
+            <FileText size={20} color={BoringAI.colors.textMuted} />
             <Text style={styles.profileTitle}>Profile</Text>
           </View>
           <View style={styles.statsContainer}>
@@ -268,7 +268,7 @@ export default function HomeScreen() {
             style={styles.actionCard}
             onPress={() => router.push("/job/analyze")}
           >
-            <Briefcase size={22} color="#0B0F14" />
+            <Briefcase size={22} color={BoringAI.colors.background} />
             <View style={styles.actionContent}>
               <Text style={styles.actionTitle}>Add a job posting</Text>
               <Text style={styles.actionDescription}>
@@ -291,54 +291,55 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Brand.colors.bg,
+    backgroundColor: BoringAI.colors.background,
   },
   scrollView: {
     flex: 1,
   },
   header: {
-    paddingHorizontal: Brand.spacing.lg,
-    paddingTop: Brand.spacing.xl,
-    paddingBottom: Brand.spacing.md,
+    paddingHorizontal: BoringAI.spacing.xl,
+    paddingTop: BoringAI.spacing.xxl,
+    paddingBottom: BoringAI.spacing.md,
   },
   title: {
-    fontSize: Brand.typography.sizes.h1,
-    fontWeight: "600" as const,
-    color: Brand.colors.text,
-    marginBottom: 4,
+    fontSize: 28,
+    fontWeight: "700" as const,
+    color: BoringAI.colors.text,
+    marginBottom: BoringAI.spacing.xxs,
+    letterSpacing: -0.2,
   },
   subtitle: {
-    fontSize: Brand.typography.sizes.body,
-    color: Brand.colors.textMuted,
-    lineHeight: Brand.typography.lineHeights.body,
+    fontSize: 16,
+    color: BoringAI.colors.textMuted,
+    lineHeight: 22,
   },
   profileCard: {
-    marginHorizontal: Brand.spacing.lg,
-    marginTop: Brand.spacing.md,
-    padding: 20,
-    backgroundColor: Brand.colors.surface,
-    borderRadius: Brand.radius.card,
-    borderWidth: 1,
-    borderColor: Brand.colors.border,
-    ...Brand.shadow,
+    marginHorizontal: BoringAI.spacing.xl,
+    marginTop: BoringAI.spacing.md,
+    padding: BoringAI.spacing.lg,
+    backgroundColor: BoringAI.colors.surface,
+    borderRadius: BoringAI.radius.card,
+    borderWidth: BoringAI.border.hairline,
+    borderColor: BoringAI.colors.border,
+    ...BoringAI.shadow.cardShadow,
   },
   profileHeader: {
     flexDirection: "row",
     alignItems: "center",
-    gap: Brand.spacing.sm,
-    marginBottom: Brand.spacing.md,
+    gap: BoringAI.spacing.sm,
+    marginBottom: BoringAI.spacing.md,
   },
   profileTitle: {
-    fontSize: Brand.typography.sizes.h3,
-    fontWeight: "600" as const,
-    color: Brand.colors.text,
+    fontSize: 18,
+    fontWeight: "700" as const,
+    color: BoringAI.colors.text,
   },
   statsContainer: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-around",
-    paddingVertical: Brand.spacing.md,
-    marginBottom: Brand.spacing.md,
+    paddingVertical: BoringAI.spacing.md,
+    marginBottom: BoringAI.spacing.md,
   },
   statItem: {
     alignItems: "center",
@@ -346,70 +347,71 @@ const styles = StyleSheet.create({
   },
   statNumber: {
     fontSize: 32,
-    fontWeight: "600" as const,
-    color: Brand.colors.accent,
-    marginBottom: 4,
+    fontWeight: "700" as const,
+    color: BoringAI.colors.text,
+    marginBottom: BoringAI.spacing.xxs,
   },
   statLabel: {
-    fontSize: Brand.typography.sizes.small,
-    color: Brand.colors.textMuted,
+    fontSize: 13,
+    color: BoringAI.colors.textMuted,
   },
   statDivider: {
     width: 1,
     height: 40,
-    backgroundColor: Brand.colors.border,
+    backgroundColor: BoringAI.colors.border,
   },
   editButton: {
-    backgroundColor: Brand.colors.surfaceAlt,
+    backgroundColor: BoringAI.colors.surface,
+    borderWidth: BoringAI.border.hairline,
+    borderColor: BoringAI.colors.borderStrong,
     paddingVertical: 12,
-    borderRadius: Brand.radius.button,
+    borderRadius: BoringAI.radius.button,
     alignItems: "center",
   },
   editButtonText: {
-    fontSize: Brand.typography.sizes.body,
+    fontSize: 16,
     fontWeight: "600" as const,
-    color: Brand.colors.text,
+    color: BoringAI.colors.text,
   },
   actionsContainer: {
-    marginHorizontal: Brand.spacing.lg,
-    marginTop: Brand.spacing.xl,
+    marginHorizontal: BoringAI.spacing.xl,
+    marginTop: BoringAI.spacing.xxl,
   },
   actionCard: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: Brand.colors.accent,
-    padding: 20,
-    borderRadius: Brand.radius.card,
-    gap: Brand.spacing.md,
+    backgroundColor: BoringAI.colors.accent,
+    padding: BoringAI.spacing.lg,
+    borderRadius: BoringAI.radius.card,
+    gap: BoringAI.spacing.md,
   },
   actionContent: {
     flex: 1,
   },
   actionTitle: {
-    fontSize: Brand.typography.sizes.h3,
-    fontWeight: "600" as const,
-    color: "#0B0F14",
-    marginBottom: 4,
+    fontSize: 18,
+    fontWeight: "700" as const,
+    color: BoringAI.colors.background,
+    marginBottom: BoringAI.spacing.xxs,
   },
   actionDescription: {
-    fontSize: Brand.typography.sizes.small,
-    color: "#0B0F14",
-    opacity: 0.85,
-    lineHeight: Brand.typography.lineHeights.small,
+    fontSize: 13,
+    color: BoringAI.colors.background,
+    lineHeight: 18,
   },
   footer: {
-    marginHorizontal: Brand.spacing.lg,
-    marginTop: Brand.spacing.xl,
-    marginBottom: Brand.spacing.lg,
+    marginHorizontal: BoringAI.spacing.xl,
+    marginTop: BoringAI.spacing.xxl,
+    marginBottom: BoringAI.spacing.lg,
     alignItems: "center",
   },
   footerText: {
-    fontSize: Brand.typography.sizes.small,
-    color: Brand.colors.textFaint,
+    fontSize: 13,
+    color: BoringAI.colors.textFaint,
   },
   onboardingContainer: {
     flex: 1,
-    paddingHorizontal: Brand.spacing.lg,
+    paddingHorizontal: BoringAI.spacing.xl,
     paddingTop: 60,
     paddingBottom: 48,
     alignItems: "center",
@@ -418,28 +420,30 @@ const styles = StyleSheet.create({
     width: 120,
     height: 120,
     borderRadius: 60,
-    backgroundColor: Brand.colors.accentSoft,
+    backgroundColor: BoringAI.colors.surfaceAlt,
+    borderWidth: BoringAI.border.hairline,
+    borderColor: BoringAI.colors.border,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: Brand.spacing.xl,
+    marginBottom: BoringAI.spacing.xxl,
   },
   onboardingTitle: {
     fontSize: 36,
-    fontWeight: "600" as const,
-    color: Brand.colors.text,
+    fontWeight: "700" as const,
+    color: BoringAI.colors.text,
     textAlign: "center",
-    marginBottom: 8,
+    marginBottom: BoringAI.spacing.xs,
   },
   onboardingSubtitle: {
-    fontSize: Brand.typography.sizes.h3,
-    fontWeight: "500" as const,
-    color: Brand.colors.textMuted,
+    fontSize: 18,
+    fontWeight: "400" as const,
+    color: BoringAI.colors.textMuted,
     textAlign: "center",
-    marginBottom: Brand.spacing.xl,
+    marginBottom: BoringAI.spacing.xxl,
   },
   onboardingDescription: {
-    fontSize: Brand.typography.sizes.body,
-    color: Brand.colors.textMuted,
+    fontSize: 16,
+    color: BoringAI.colors.textMuted,
     lineHeight: 28,
     marginBottom: 48,
     textAlign: "center",
@@ -452,21 +456,21 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: Brand.colors.accent,
+    backgroundColor: BoringAI.colors.accent,
     paddingVertical: 18,
     paddingHorizontal: 18,
-    borderRadius: Brand.radius.button,
-    gap: Brand.spacing.sm,
+    borderRadius: BoringAI.radius.button,
+    gap: BoringAI.spacing.sm,
   },
   onboardingPrimaryButtonText: {
-    fontSize: Brand.typography.sizes.h3,
+    fontSize: 18,
     fontWeight: "600" as const,
-    color: "#0B0F14",
+    color: BoringAI.colors.background,
   },
   onboardingHint: {
-    fontSize: Brand.typography.sizes.small,
-    color: Brand.colors.textMuted,
+    fontSize: 13,
+    color: BoringAI.colors.textMuted,
     textAlign: "center",
-    marginTop: Brand.spacing.md,
+    marginTop: BoringAI.spacing.md,
   },
 });

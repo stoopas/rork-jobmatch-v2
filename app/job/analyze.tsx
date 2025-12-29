@@ -17,7 +17,7 @@ import {
 import { useUserProfile } from "../../contexts/UserProfileContext";
 import { generateText } from "@rork-ai/toolkit-sdk";
 import type { JobPosting } from "../../types/profile";
-import { Brand } from "../../constants/brand";
+import { BoringAI } from "../../ui/theme/boringAiTheme";
 
 export default function AnalyzeJobScreen() {
   const { profile, addJobPosting, getResumeAssets } = useUserProfile();
@@ -113,7 +113,7 @@ Return only valid JSON, no additional text.`,
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.header}>
-          <Briefcase size={40} color={Brand.colors.accent} strokeWidth={1} />
+          <Briefcase size={40} color={BoringAI.colors.text} strokeWidth={1.5} />
           <Text style={styles.title}>Add a job posting</Text>
           <Text style={styles.subtitle}>
             Paste the job description and we&apos;ll prepare your tailored resume
@@ -127,7 +127,7 @@ Return only valid JSON, no additional text.`,
             value={jobText}
             onChangeText={setJobText}
             multiline
-            placeholderTextColor={Brand.colors.textFaint}
+            placeholderTextColor={BoringAI.colors.textFaint}
             editable={!isAnalyzing}
           />
         </View>
@@ -139,7 +139,7 @@ Return only valid JSON, no additional text.`,
         >
           {isAnalyzing ? (
             <>
-              <ActivityIndicator color="#0B0F14" size="small" />
+              <ActivityIndicator color={BoringAI.colors.background} size="small" />
               <Text style={styles.analyzeButtonText}>Analyzing...</Text>
             </>
           ) : (
@@ -154,62 +154,62 @@ Return only valid JSON, no additional text.`,
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Brand.colors.bg,
+    backgroundColor: BoringAI.colors.background,
   },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
-    padding: Brand.spacing.lg,
+    padding: BoringAI.spacing.xl,
   },
   header: {
     alignItems: "center",
-    marginBottom: Brand.spacing.xl,
+    marginBottom: BoringAI.spacing.xxl,
   },
   title: {
-    fontSize: Brand.typography.sizes.h2,
-    fontWeight: "600" as const,
-    color: Brand.colors.text,
-    marginTop: Brand.spacing.md,
-    marginBottom: Brand.spacing.xs,
+    fontSize: 22,
+    fontWeight: "700" as const,
+    color: BoringAI.colors.text,
+    marginTop: BoringAI.spacing.md,
+    marginBottom: BoringAI.spacing.xs,
     textAlign: "center",
+    letterSpacing: -0.1,
   },
   subtitle: {
-    fontSize: Brand.typography.sizes.body,
-    color: Brand.colors.textMuted,
+    fontSize: 16,
+    color: BoringAI.colors.textMuted,
     textAlign: "center",
-    lineHeight: Brand.typography.lineHeights.body,
+    lineHeight: 22,
   },
   inputContainer: {
-    marginBottom: Brand.spacing.lg,
+    marginBottom: BoringAI.spacing.lg,
   },
   textArea: {
-    backgroundColor: Brand.colors.surface,
-    padding: 20,
-    borderRadius: Brand.radius.input,
-    fontSize: Brand.typography.sizes.body,
-    color: Brand.colors.text,
+    backgroundColor: BoringAI.colors.surface,
+    padding: BoringAI.spacing.lg,
+    borderRadius: BoringAI.radius.input,
+    fontSize: 16,
+    color: BoringAI.colors.text,
     minHeight: 300,
     textAlignVertical: "top",
-    borderWidth: 1,
-    borderColor: Brand.colors.border,
-
+    borderWidth: BoringAI.border.hairline,
+    borderColor: BoringAI.colors.border,
   },
   analyzeButton: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: Brand.spacing.sm,
-    backgroundColor: Brand.colors.accent,
+    gap: BoringAI.spacing.sm,
+    backgroundColor: BoringAI.colors.accent,
     paddingVertical: 18,
-    borderRadius: Brand.radius.button,
+    borderRadius: BoringAI.radius.button,
   },
   buttonDisabled: {
     opacity: 0.5,
   },
   analyzeButtonText: {
-    fontSize: Brand.typography.sizes.h3,
+    fontSize: 18,
     fontWeight: "600" as const,
-    color: "#0B0F14",
+    color: BoringAI.colors.background,
   },
 });

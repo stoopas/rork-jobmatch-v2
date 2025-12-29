@@ -6,7 +6,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { StyleSheet, ActivityIndicator, View } from "react-native";
 
 import { UserProfileProvider, useUserProfile } from "../contexts/UserProfileContext";
-import { Brand } from "../constants/brand";
+import { BoringAI } from "../ui/theme/boringAiTheme";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -31,7 +31,7 @@ function RootLayoutNav() {
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={Brand.colors.accent} />
+        <ActivityIndicator size="large" color={BoringAI.colors.accent} />
       </View>
     );
   }
@@ -43,9 +43,9 @@ function RootLayoutNav() {
         options={{
           title: "JustApply",
           headerStyle: {
-            backgroundColor: Brand.colors.surface,
+            backgroundColor: BoringAI.colors.surface,
           },
-          headerTintColor: Brand.colors.text,
+          headerTintColor: BoringAI.colors.text,
           headerShown: false,
         }}
       />
@@ -54,8 +54,8 @@ function RootLayoutNav() {
         options={{
           title: "Edit Profile",
           headerLargeTitle: false,
-          headerStyle: { backgroundColor: Brand.colors.surface },
-          headerTintColor: Brand.colors.text,
+          headerStyle: { backgroundColor: BoringAI.colors.surface },
+          headerTintColor: BoringAI.colors.text,
         }}
       />
       <Stack.Screen
@@ -63,8 +63,8 @@ function RootLayoutNav() {
         options={{
           title: "Add Job",
           headerLargeTitle: false,
-          headerStyle: { backgroundColor: Brand.colors.surface },
-          headerTintColor: Brand.colors.text,
+          headerStyle: { backgroundColor: BoringAI.colors.surface },
+          headerTintColor: BoringAI.colors.text,
         }}
       />
       <Stack.Screen
@@ -72,8 +72,8 @@ function RootLayoutNav() {
         options={{
           title: "Quick Questions",
           headerLargeTitle: false,
-          headerStyle: { backgroundColor: Brand.colors.surface },
-          headerTintColor: Brand.colors.text,
+          headerStyle: { backgroundColor: BoringAI.colors.surface },
+          headerTintColor: BoringAI.colors.text,
         }}
       />
       <Stack.Screen
@@ -81,8 +81,8 @@ function RootLayoutNav() {
         options={{
           title: "Fit Score",
           headerLargeTitle: false,
-          headerStyle: { backgroundColor: Brand.colors.surface },
-          headerTintColor: Brand.colors.text,
+          headerStyle: { backgroundColor: BoringAI.colors.surface },
+          headerTintColor: BoringAI.colors.text,
         }}
       />
       <Stack.Screen
@@ -90,8 +90,8 @@ function RootLayoutNav() {
         options={{
           title: "Resume Format",
           headerLargeTitle: false,
-          headerStyle: { backgroundColor: Brand.colors.surface },
-          headerTintColor: Brand.colors.text,
+          headerStyle: { backgroundColor: BoringAI.colors.surface },
+          headerTintColor: BoringAI.colors.text,
         }}
       />
       <Stack.Screen
@@ -99,8 +99,8 @@ function RootLayoutNav() {
         options={{
           title: "Resume Ready",
           headerLargeTitle: false,
-          headerStyle: { backgroundColor: Brand.colors.surface },
-          headerTintColor: Brand.colors.text,
+          headerStyle: { backgroundColor: BoringAI.colors.surface },
+          headerTintColor: BoringAI.colors.text,
         }}
       />
       <Stack.Screen
@@ -134,6 +134,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: Brand.colors.bg,
+    backgroundColor: BoringAI.colors.background,
   },
 });
