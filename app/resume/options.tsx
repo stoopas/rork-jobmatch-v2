@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from "expo-router";
-import { Check, ChevronDown, FileText } from "lucide-react-native";
+import { Check, FileText } from "lucide-react-native";
 import React, { useState } from "react";
 import {
   ScrollView,
@@ -25,13 +25,17 @@ export default function ResumeOptionsScreen() {
   const { getResumeAssets } = useUserProfile();
   
   const resumeAssets = getResumeAssets();
-  const docxAssets = resumeAssets.filter((a) => a.type === "docx");
+  const docxAssets = resumeAssets.filter((a) => a.type === "docx" && !!a.docxBase64);
   
-  const [mode, setMode] = useState<ResumeRenderMode>("standard");
-  const [selectedTemplateId, setSelectedTemplateId] = useState<string | undefined>(
-    docxAssets.length > 0 ? docxAssets[0].id : undefined
+  const sortedDocxAssets = docxAssets.sort((a, b) => 
+    new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime()
   );
-  const [showTemplatePicker, setShowTemplatePicker] = useState(false);
+  
+  const defaultMode: ResumeRenderMode = sortedDocxAssets.length > 0 ? "template" : "standard";
+  const defaultTemplateId = sortedDocxAssets.length > 0 ? sortedDocxAssets[0].id : undefined;
+  
+  const [mode, setMode] = useState<ResumeRenderMode>(defaultMode);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string | undefined>(defaultTemplateId);
 
   const handleGenerate = () => {
     const options: ResumeRenderOptions = {
@@ -51,7 +55,7 @@ export default function ResumeOptionsScreen() {
     });
   };
 
-  const selectedTemplate = docxAssets.find((a) => a.id === selectedTemplateId);
+
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
@@ -112,9 +116,9 @@ export default function ResumeOptionsScreen() {
                   )}
                 </View>
                 <View style={styles.optionTextContainer}>
-                  <Text style={styles.optionTitle}>Match Existing Format</Text>
+                  <Text style={styles.optionTitle}>Match My Resume Format (Recommended)</Text>
                   <Text style={styles.optionDescription}>
-                    Use the layout and styling from one of your uploaded resumes
+                    Uses your actual resume&apos;s layout, fonts, and styling—stays 1 page
                   </Text>
                 </View>
               </View>
@@ -124,7 +128,7 @@ export default function ResumeOptionsScreen() {
                   {docxAssets.length === 0 ? (
                     <View style={styles.noTemplatesContainer}>
                       <Text style={styles.noTemplatesText}>
-                        Upload a DOCX resume to use as a template
+                        Upload a DOCX to match your format
                       </Text>
                       <TouchableOpacity
                         style={styles.uploadButton}
@@ -137,44 +141,57 @@ export default function ResumeOptionsScreen() {
                     </View>
                   ) : (
                     <>
-                      <Text style={styles.templatePickerLabel}>
-                        Select template:
-                      </Text>
-                      <TouchableOpacity
-                        style={styles.templateSelector}
-                        onPress={() => setShowTemplatePicker(!showTemplatePicker)}
-                      >
-                        <Text style={styles.templateSelectorText}>
-                          {selectedTemplate?.name || "Select a template"}
-                        </Text>
-                        <ChevronDown size={20} color="#666666" />
-                      </TouchableOpacity>
-
-                      {showTemplatePicker && (
-                        <View style={styles.templateDropdown}>
-                          {docxAssets.map((asset) => (
-                            <TouchableOpacity
-                              key={asset.id}
-                              style={styles.templateOption}
-                              onPress={() => {
-                                setSelectedTemplateId(asset.id);
-                                setShowTemplatePicker(false);
-                              }}
-                            >
-                              <Text style={styles.templateOptionText}>
-                                {asset.name}
-                              </Text>
-                              {selectedTemplateId === asset.id && (
-                                <Check size={20} color="#0066FF" />
-                              )}
-                            </TouchableOpacity>
-                          ))}
+                      {sortedDocxAssets.length === 1 ? (
+                        <View style={styles.singleTemplateContainer}>
+                          <Text style={styles.singleTemplateLabel}>Using:</Text>
+                          <View style={styles.singleTemplateCard}>
+                            <FileText size={18} color="#0066FF" />
+                            <Text style={styles.singleTemplateName}>
+                              {sortedDocxAssets[0].name}
+                            </Text>
+                          </View>
                         </View>
+                      ) : (
+                        <>
+                          <Text style={styles.templatePickerLabel}>
+                            Choose which resume to match:
+                          </Text>
+                          <View style={styles.templateList}>
+                            {sortedDocxAssets.map((asset) => (
+                              <TouchableOpacity
+                                key={asset.id}
+                                style={[
+                                  styles.templateListItem,
+                                  selectedTemplateId === asset.id && styles.templateListItemSelected,
+                                ]}
+                                onPress={() => setSelectedTemplateId(asset.id)}
+                              >
+                                <View style={styles.templateListItemContent}>
+                                  <FileText size={18} color={selectedTemplateId === asset.id ? "#0066FF" : "#666666"} />
+                                  <View style={styles.templateListItemText}>
+                                    <Text style={[
+                                      styles.templateListItemName,
+                                      selectedTemplateId === asset.id && styles.templateListItemNameSelected,
+                                    ]}>
+                                      {asset.name}
+                                    </Text>
+                                    <Text style={styles.templateListItemDate}>
+                                      Uploaded {new Date(asset.uploadedAt).toLocaleDateString()}
+                                    </Text>
+                                  </View>
+                                </View>
+                                {selectedTemplateId === asset.id && (
+                                  <Check size={20} color="#0066FF" />
+                                )}
+                              </TouchableOpacity>
+                            ))}
+                          </View>
+                        </>
                       )}
 
                       <View style={styles.infoBox}>
                         <Text style={styles.infoText}>
-                          The generated resume will match the structure, fonts, and styling of your template while using tailored content for this job.
+                          We&apos;ll keep your format and automatically compress content to stay within 1 page.
                         </Text>
                       </View>
                     </>
@@ -405,5 +422,69 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "600" as const,
     color: "#1A1A1A",
+  },
+  singleTemplateContainer: {
+    paddingVertical: 12,
+  },
+  singleTemplateLabel: {
+    fontSize: 14,
+    fontWeight: "600" as const,
+    color: "#1A1A1A",
+    marginBottom: 10,
+  },
+  singleTemplateCard: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    gap: 10,
+    backgroundColor: "#F8F9FA",
+    padding: 14,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#0066FF",
+  },
+  singleTemplateName: {
+    fontSize: 15,
+    fontWeight: "600" as const,
+    color: "#1A1A1A",
+    flex: 1,
+  },
+  templateList: {
+    gap: 8,
+  },
+  templateListItem: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    justifyContent: "space-between" as const,
+    backgroundColor: "#F8F9FA",
+    padding: 14,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#E5E5E5",
+  },
+  templateListItemSelected: {
+    borderColor: "#0066FF",
+    backgroundColor: "#F8FBFF",
+  },
+  templateListItemContent: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    gap: 10,
+    flex: 1,
+  },
+  templateListItemText: {
+    flex: 1,
+  },
+  templateListItemName: {
+    fontSize: 15,
+    fontWeight: "600" as const,
+    color: "#1A1A1A",
+  },
+  templateListItemNameSelected: {
+    color: "#0066FF",
+  },
+  templateListItemDate: {
+    fontSize: 12,
+    color: "#999999",
+    marginTop: 2,
   },
 });

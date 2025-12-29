@@ -113,29 +113,35 @@ ${extractedResumeText.slice(0, 2000)}
   if (options.mode === "template" && options.templateFingerprint) {
     const fp = options.templateFingerprint;
     prompt += `
-TEMPLATE MODE CONSTRAINTS:
-You must generate content that fits within the template structure:
-- Has summary section: ${fp.hasSummary}
-- Section order: ${fp.sectionOrder.join(", ")}
-- Experience entries: ${fp.experience.length} (match this count if possible)
-- Per-entry bullet constraints:
-${fp.experience.map((exp, idx) => `  Entry ${idx + 1}: ${exp.bulletCount} bullets, character budgets: ${exp.bulletCharBudgets.join(", ")}`).join('\n')}
-- Total character budget: ~${fp.totalCharBudget}
+TEMPLATE MODE CONSTRAINTS (CRITICAL - MUST FOLLOW EXACTLY):
+You are generating content to fit within an existing resume template that MUST stay on 1 page.
 
-IMPORTANT:
-- Keep each bullet under its character budget
-- Do NOT add more bullets than the template has
-- Do NOT add sections the template doesn't have
-- Prioritize the most relevant experiences and skills to fit the template
+- Has summary section: ${fp.hasSummary}
+- Section order: ${fp.sectionOrder.join(" → ")}
+- Experience entries: EXACTLY ${fp.experience.length} (do NOT add or remove entries)
+
+PER-ENTRY BULLET CONSTRAINTS (STRICT):
+${fp.experience.map((exp, idx) => `  Entry ${idx + 1}: EXACTLY ${exp.bulletCount} bullets
+    Character limits per bullet: ${exp.bulletCharBudgets.map((budget, i) => `#${i + 1}: ${budget} chars`).join(", ")}`).join('\n')}
+
+CRITICAL RULES:
+1. Each bullet MUST be under its character budget (hard limit)
+2. DO NOT add more bullets than specified - ${fp.experience.reduce((sum, e) => sum + e.bulletCount, 0)} total bullets maximum
+3. DO NOT add sections the template doesn't have
+4. Prioritize the most relevant experiences from the profile
+5. If profile has more experiences than template slots, choose the most relevant ${fp.experience.length} for this job
+6. Use concise, impactful language to stay within character budgets
+7. Remove filler words ("responsible for", "helped to", etc.) to save space
 `;
   } else {
     prompt += `
 STANDARD MODE:
 - Generate a clean, ATS-friendly one-page resume
-- Use 3-5 bullet points per experience entry
-- Keep bullets concise (under 120 characters each)
-- Prioritize relevance to the job posting
-- Include only the most impactful and relevant content
+- Use 3-4 bullet points per experience entry (max 5 for most relevant)
+- Keep bullets concise (80-110 characters each, max 120)
+- Total resume should fit on 1 page when rendered
+- Prioritize quality and impact over quantity
+- Select the 2-3 most relevant experiences for this job
 `;
   }
 
@@ -222,7 +228,35 @@ RULES:
 
   console.log("[tailoredResumeGenerator] Generated resume preview:");
   console.log("[tailoredResumeGenerator] Experience count:", parsed.experience?.length || 0);
+  console.log("[tailoredResumeGenerator] Bullet counts per entry:", parsed.experience?.map((e: any) => e.bullets?.length || 0) || []);
   console.log("[tailoredResumeGenerator] Skills count:", Object.keys(parsed.skills || {}).length);
+
+  if (options.mode === "template" && options.templateFingerprint) {
+    const fp = options.templateFingerprint;
+    if (parsed.experience?.length > fp.experience.length) {
+      console.warn(`[tailoredResumeGenerator] WARNING: Generated ${parsed.experience.length} experiences but template has ${fp.experience.length}. Trimming to fit.`);
+      parsed.experience = parsed.experience.slice(0, fp.experience.length);
+    }
+    
+    parsed.experience?.forEach((exp: any, idx: number) => {
+      const templateEntry = fp.experience[idx];
+      if (!templateEntry) return;
+      
+      if (exp.bullets.length > templateEntry.bulletCount) {
+        console.warn(`[tailoredResumeGenerator] WARNING: Entry ${idx + 1} has ${exp.bullets.length} bullets but template has ${templateEntry.bulletCount}. Trimming.`);
+        exp.bullets = exp.bullets.slice(0, templateEntry.bulletCount);
+      }
+      
+      exp.bullets = exp.bullets.map((bullet: string, bulletIdx: number) => {
+        const charBudget = templateEntry.bulletCharBudgets[bulletIdx];
+        if (charBudget && bullet.length > charBudget) {
+          console.warn(`[tailoredResumeGenerator] WARNING: Entry ${idx + 1}, bullet ${bulletIdx + 1} is ${bullet.length} chars but budget is ${charBudget}. Truncating.`);
+          return bullet.slice(0, charBudget - 3) + "...";
+        }
+        return bullet;
+      });
+    });
+  }
 
   const result: TailoredResumeJson = {
     header: parsed.header || {
@@ -240,6 +274,14 @@ RULES:
     pExp.company.toLowerCase() === exp.company.toLowerCase()
   ))) {
     console.warn("[tailoredResumeGenerator] WARNING: Generated experience contains companies not in profile");
+  }
+
+  if (__DEV__) {
+    console.log("[tailoredResumeGenerator] Final output stats:");
+    console.log("  - Mode:", options.mode);
+    console.log("  - Experience entries:", result.experience.length);
+    console.log("  - Total bullets:", result.experience.reduce((sum, e) => sum + e.bullets.length, 0));
+    console.log("  - Skills:", (result.skills.core?.length || 0) + (result.skills.tools?.length || 0));
   }
 
   console.log("[tailoredResumeGenerator] Generation complete");

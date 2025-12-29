@@ -19,7 +19,7 @@ import { generateText } from "@rork-ai/toolkit-sdk";
 import type { JobPosting } from "../../types/profile";
 
 export default function AnalyzeJobScreen() {
-  const { profile, addJobPosting } = useUserProfile();
+  const { profile, addJobPosting, getResumeAssets } = useUserProfile();
   const [jobText, setJobText] = useState("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
 
@@ -29,10 +29,20 @@ export default function AnalyzeJobScreen() {
       return;
     }
 
-    if (profile.experience.length === 0 && profile.skills.length === 0) {
+    const resumeAssets = getResumeAssets();
+    const hasAnyData = 
+      profile.experience.length > 0 || 
+      profile.skills.length > 0 || 
+      resumeAssets.length > 0;
+
+    if (!hasAnyData) {
       Alert.alert(
-        "No Profile Data",
-        "Please add your experience and skills first before analyzing job postings."
+        "Upload Resume First",
+        "Please upload a resume to analyze job postings.",
+        [
+          { text: "OK" },
+          { text: "Go to Profile", onPress: () => router.push("/profile/edit") },
+        ]
       );
       return;
     }

@@ -1,7 +1,7 @@
 import * as Sharing from "expo-sharing";
 import * as FileSystem from "expo-file-system/legacy";
 import { router, useLocalSearchParams } from "expo-router";
-import { Check, Copy, Download, FileText, Sparkles } from "lucide-react-native";
+import { Check, ChevronDown, ChevronUp, Copy, Download, FileText, Sparkles } from "lucide-react-native";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -30,6 +30,7 @@ export default function GenerateResumeScreen() {
   const [isGenerating, setIsGenerating] = useState(true);
   const [isDownloading, setIsDownloading] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [previewExpanded, setPreviewExpanded] = useState(false);
 
   const job = jobPostings.find((j) => j.id === jobId);
   const renderMode = (mode || "standard") as "standard" | "template";
@@ -265,7 +266,7 @@ ${
   }
 
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       <View style={styles.header}>
         <View style={styles.headerContent}>
           <View style={styles.iconContainer}>
@@ -291,47 +292,70 @@ ${
         </View>
       </View>
 
-      <ScrollView style={styles.resumeContainer} showsVerticalScrollIndicator={false}>
-        <View style={styles.resumeCard}>
-          <Text style={styles.resumeText}>{resumeText}</Text>
-        </View>
-      </ScrollView>
-
-      <View style={styles.actions}>
+      <View style={styles.actionsTop}>
         <TouchableOpacity
-          style={[styles.actionButton, styles.downloadButton]}
+          style={[styles.downloadButtonPrimary, isDownloading && styles.buttonDisabled]}
           onPress={downloadDocx}
           disabled={isDownloading}
         >
           {isDownloading ? (
-            <ActivityIndicator size="small" color="#FFFFFF" />
+            <>
+              <ActivityIndicator size="small" color="#FFFFFF" />
+              <Text style={styles.downloadButtonPrimaryText}>Generating...</Text>
+            </>
           ) : (
             <>
-              <Download size={20} color="#FFFFFF" />
-              <Text style={styles.downloadButtonText}>Download .docx</Text>
+              <Download size={22} color="#FFFFFF" />
+              <Text style={styles.downloadButtonPrimaryText}>Download .docx</Text>
             </>
           )}
         </TouchableOpacity>
+        <Text style={styles.downloadHint}>Ready to submit with your application</Text>
+      </View>
 
-        <TouchableOpacity style={[styles.actionButton, styles.copyButton]} onPress={copyToClipboard}>
-          {copied ? (
-            <>
-              <Check size={20} color="#10B981" />
-              <Text style={[styles.actionButtonText, { color: "#10B981" }]}>Copied!</Text>
-            </>
-          ) : (
-            <>
-              <Copy size={20} color="#0066FF" />
-              <Text style={styles.actionButtonText}>Copy</Text>
-            </>
-          )}
+      <TouchableOpacity
+        style={styles.previewToggle}
+        onPress={() => setPreviewExpanded(!previewExpanded)}
+        activeOpacity={0.7}
+      >
+        <Text style={styles.previewToggleLabel}>Text Preview</Text>
+        {previewExpanded ? (
+          <ChevronUp size={20} color="#666666" />
+        ) : (
+          <ChevronDown size={20} color="#666666" />
+        )}
+      </TouchableOpacity>
+
+      {previewExpanded && (
+        <View style={styles.resumeCard}>
+          <Text style={styles.resumeText}>{resumeText}</Text>
+          <TouchableOpacity
+            style={styles.copyButtonInline}
+            onPress={copyToClipboard}
+          >
+            {copied ? (
+              <>
+                <Check size={18} color="#10B981" />
+                <Text style={[styles.copyButtonInlineText, { color: "#10B981" }]}>Copied!</Text>
+              </>
+            ) : (
+              <>
+                <Copy size={18} color="#0066FF" />
+                <Text style={styles.copyButtonInlineText}>Copy Text</Text>
+              </>
+            )}
+          </TouchableOpacity>
+        </View>
+      )}
+
+      <View style={styles.actionsBottom}>
+        <TouchableOpacity style={styles.doneButton} onPress={() => router.push("/")}>
+          <Text style={styles.doneButtonText}>Done</Text>
         </TouchableOpacity>
       </View>
 
-      <TouchableOpacity style={styles.doneButton} onPress={() => router.push("/")}>
-        <Text style={styles.doneButtonText}>Done</Text>
-      </TouchableOpacity>
-    </View>
+      <View style={styles.bottomPadding} />
+    </ScrollView>
   );
 }
 
@@ -494,8 +518,6 @@ const styles = StyleSheet.create({
     color: "#0066FF",
   },
   doneButton: {
-    marginHorizontal: 20,
-    marginVertical: 12,
     paddingVertical: 14,
     borderRadius: 12,
     alignItems: "center",
@@ -505,5 +527,79 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "600" as const,
     color: "#1A1A1A",
+  },
+  actionsTop: {
+    padding: 20,
+    paddingBottom: 12,
+    backgroundColor: "#FFFFFF",
+  },
+  downloadButtonPrimary: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+    gap: 10,
+    backgroundColor: "#0066FF",
+    paddingVertical: 18,
+    borderRadius: 16,
+    shadowColor: "#0066FF",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  buttonDisabled: {
+    opacity: 0.6,
+  },
+  downloadButtonPrimaryText: {
+    fontSize: 17,
+    fontWeight: "700" as const,
+    color: "#FFFFFF",
+  },
+  downloadHint: {
+    fontSize: 13,
+    color: "#666666",
+    textAlign: "center" as const,
+    marginTop: 8,
+  },
+  previewToggle: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    justifyContent: "space-between" as const,
+    marginHorizontal: 20,
+    marginTop: 12,
+    padding: 16,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#E5E5E5",
+  },
+  previewToggleLabel: {
+    fontSize: 15,
+    fontWeight: "600" as const,
+    color: "#1A1A1A",
+  },
+  copyButtonInline: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+    gap: 6,
+    marginTop: 16,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    backgroundColor: "#F0F0F0",
+    borderRadius: 8,
+    alignSelf: "center" as const,
+  },
+  copyButtonInlineText: {
+    fontSize: 14,
+    fontWeight: "600" as const,
+    color: "#0066FF",
+  },
+  actionsBottom: {
+    marginHorizontal: 20,
+    marginTop: 12,
+  },
+  bottomPadding: {
+    height: 40,
   },
 });
