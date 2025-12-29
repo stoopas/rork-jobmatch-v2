@@ -1,6 +1,6 @@
 import * as FileSystem from "expo-file-system/legacy";
 import { Platform } from "react-native";
-import { toByteArray } from "base64-js";
+import { extractDocxText } from "./docxTextExtractor";
 
 export type ExtractedResumeText = {
   text: string;
@@ -153,206 +153,7 @@ async function extractPDFViaServer(uri: string): Promise<string> {
   }
 }
 
-function bytesToHex(bytes: Uint8Array, count: number = 8): string {
-  return Array.from(bytes.slice(0, count))
-    .map(b => b.toString(16).padStart(2, '0'))
-    .join(' ');
-}
 
-function bytesToAscii(bytes: Uint8Array, count: number = 8): string {
-  return Array.from(bytes.slice(0, count))
-    .map(b => (b >= 32 && b < 127) ? String.fromCharCode(b) : '.')
-    .join('');
-}
-
-async function extractDOCXLocally(uri: string): Promise<{ text: string; base64: string }> {
-  console.log("[extractDOCX] Starting local DOCX extraction...");
-  console.log("[extractDOCX] Platform:", Platform.OS);
-  console.log("[extractDOCX] URI:", uri);
-  
-  try {
-    console.log("[extractDOCX] Importing mammoth...");
-    const mammoth = await import("mammoth");
-    console.log("[extractDOCX] Mammoth imported successfully");
-    
-    let arrayBuffer: ArrayBuffer;
-    let base64: string;
-    
-    if (Platform.OS === 'web') {
-      console.log("[extractDOCX] Using web File API");
-      
-      const response = await fetch(uri);
-      if (!response.ok) {
-        throw new Error(`Failed to fetch file: ${response.statusText}`);
-      }
-      arrayBuffer = await response.arrayBuffer();
-      console.log("[extractDOCX] Fetched file as ArrayBuffer, size:", arrayBuffer.byteLength);
-      
-      const uint8Array = new Uint8Array(arrayBuffer);
-      base64 = btoa(String.fromCharCode(...uint8Array));
-    } else {
-      console.log("[extractDOCX] Using expo-file-system for mobile");
-      
-      let workingUri = uri;
-      
-      if (Platform.OS === 'ios') {
-        console.log("[extractDOCX] iOS detected - forcing copy to cache directory");
-        console.log("[extractDOCX] Original URI:", uri);
-        
-        const isICloudUri = uri.includes('icloud') || uri.includes('CloudDocs');
-        console.log("[extractDOCX] Is iCloud URI:", isICloudUri);
-        
-        try {
-          const timestamp = Date.now();
-          const safeName = uri.split('/').pop() || `resume_${timestamp}.docx`;
-          const cachedUri = `${FileSystem.cacheDirectory}${timestamp}_${safeName}`;
-          
-          console.log("[extractDOCX] Copying to cache:", cachedUri);
-          await FileSystem.copyAsync({ from: uri, to: cachedUri });
-          
-          workingUri = cachedUri;
-          console.log("[extractDOCX] Copy successful, using cached URI:", workingUri);
-        } catch (copyError: any) {
-          console.warn("[extractDOCX] Copy to cache failed:", copyError.message);
-          console.warn("[extractDOCX] Falling back to original URI");
-          
-          if (isICloudUri) {
-            throw new ResumeExtractionError(
-              "Couldn't access this file. If it's in iCloud, please download it to your phone first, then try uploading again."
-            );
-          }
-        }
-      }
-      
-      try {
-        console.log("[extractDOCX] Reading file as base64 from:", workingUri);
-        base64 = await FileSystem.readAsStringAsync(workingUri, {
-          encoding: FileSystem.EncodingType.Base64,
-        });
-        
-        console.log("[extractDOCX] Successfully read file as base64");
-        console.log("[extractDOCX] Base64 length:", base64.length);
-        
-        if (!base64 || base64.length < 1000) {
-          throw new ResumeExtractionError(
-            "Couldn't read this file on your device. Try selecting it again (or move it out of iCloud)."
-          );
-        }
-        
-        console.log("[extractDOCX] Converting base64 to ArrayBuffer using base64-js...");
-        
-        const bytes = toByteArray(base64);
-        arrayBuffer = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
-        
-        console.log("[extractDOCX] ArrayBuffer created, size:", arrayBuffer.byteLength);
-        
-        if (__DEV__) {
-          const firstBytes = new Uint8Array(arrayBuffer.slice(0, 8));
-          console.log("[extractDOCX] First 8 bytes (hex):", bytesToHex(firstBytes));
-          console.log("[extractDOCX] First 8 bytes (ASCII):", bytesToAscii(firstBytes));
-          
-          const startsWithPK = firstBytes[0] === 0x50 && firstBytes[1] === 0x4B;
-          console.log("[extractDOCX] Starts with PK (ZIP header):", startsWithPK);
-          
-          const isValidZip = firstBytes[0] === 0x50 && firstBytes[1] === 0x4B && 
-                            firstBytes[2] === 0x03 && firstBytes[3] === 0x04;
-          console.log("[extractDOCX] Valid ZIP signature (PK 03 04):", isValidZip);
-        }
-        
-        const firstBytes = new Uint8Array(arrayBuffer.slice(0, 4));
-        if (firstBytes[0] !== 0x50 || firstBytes[1] !== 0x4B || 
-            firstBytes[2] !== 0x03 || firstBytes[3] !== 0x04) {
-          console.error("[extractDOCX] INVALID FILE: Does not start with valid ZIP signature (PK 03 04)");
-          console.error("[extractDOCX] First 4 bytes:", bytesToHex(firstBytes, 4));
-          
-          throw new ResumeExtractionError(
-            "This file isn't a valid .docx Word document. Please export/save as .docx (Word 2007+) and try again."
-          );
-        }
-      } catch (fsError: any) {
-        console.error("[extractDOCX] FileSystem read error:", fsError);
-        
-        if (fsError instanceof ResumeExtractionError) {
-          throw fsError;
-        }
-        
-        throw new ResumeExtractionError(
-          `Failed to read file: ${fsError.message}`
-        );
-      }
-    }
-    
-    if (!arrayBuffer || arrayBuffer.byteLength === 0) {
-      throw new ResumeExtractionError(
-        "File appears to be empty. Please check the file and try again."
-      );
-    }
-    
-    console.log("[extractDOCX] Calling mammoth.extractRawText...");
-    
-    let result;
-    try {
-      result = await mammoth.default.extractRawText({ arrayBuffer });
-    } catch (mammothError: any) {
-      console.error("[extractDOCX] Mammoth parsing error:", mammothError);
-      console.error("[extractDOCX] Mammoth error message:", mammothError.message);
-      
-      if (mammothError.message && (mammothError.message.includes('expected') || mammothError.message.includes('XML'))) {
-        throw new ResumeExtractionError(
-          "We couldn't parse this Word file. Try opening it in Word/Google Docs and re-saving as .docx."
-        );
-      }
-      
-      throw new ResumeExtractionError(
-        `Word file parsing failed: ${mammothError.message || 'Unknown error'}`
-      );
-    }
-    
-    console.log("[extractDOCX] Mammoth extraction complete");
-    console.log("[extractDOCX] Extracted text length:", result.value.length);
-    
-    if (result.messages && result.messages.length > 0) {
-      console.warn("[extractDOCX] Mammoth messages:", result.messages);
-    }
-    
-    const cleanedText = result.value
-      .replace(/\r\n/g, '\n')
-      .replace(/\r/g, '\n')
-      .replace(/\n{3,}/g, '\n\n')
-      .replace(/[ \t]{2,}/g, ' ')
-      .trim();
-    
-    console.log("[extractDOCX] Cleaned text length:", cleanedText.length);
-    
-    if (__DEV__) {
-      console.log("[extractDOCX] First 200 chars:", cleanedText.slice(0, 200));
-    }
-    
-    if (cleanedText.length === 0) {
-      throw new ResumeExtractionError(
-        "Could not extract text from Word document. The file may be empty or corrupted."
-      );
-    }
-    
-    return { text: cleanedText, base64 };
-  } catch (error: any) {
-    console.error("[extractDOCX] Extraction failed:", error);
-    console.error("[extractDOCX] Error name:", error.name);
-    console.error("[extractDOCX] Error message:", error.message);
-    
-    if (__DEV__) {
-      console.error("[extractDOCX] Error stack:", error.stack);
-    }
-    
-    if (error instanceof ResumeExtractionError) {
-      throw error;
-    }
-    
-    throw new ResumeExtractionError(
-      `Failed to extract DOCX text: ${error.message || 'Unknown error'}. Please ensure the file is a valid Word document.`
-    );
-  }
-}
 
 async function extractTXTLocally(uri: string): Promise<string> {
   console.log("[extractTXT] Reading plain text file...");
@@ -418,7 +219,7 @@ export async function extractResumeText(
       break;
       
     case "docx":
-      const docxResult = await extractDOCXLocally(uri);
+      const docxResult = await extractDocxText({ uri, fileName, mimeType });
       text = docxResult.text;
       docxBase64 = docxResult.base64;
       source = "local_docx";

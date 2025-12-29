@@ -25,6 +25,7 @@ const uploadPDF = multer({
   },
 });
 
+// eslint-disable-next-line no-unused-vars
 const uploadDOCX = multer({
   storage: multer.memoryStorage(),
   limits: {
@@ -54,6 +55,72 @@ function cleanExtractedText(text) {
 
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', service: 'resume-extractor' });
+});
+
+app.post('/extract/docx', express.json(), async (req, res) => {
+  console.log('[server] POST /extract/docx');
+
+  try {
+    const { base64, fileName, mimeType } = req.body;
+
+    if (!base64) {
+      return res.status(400).json({ error: 'base64 is required' });
+    }
+
+    console.log('[server] Decoding base64 DOCX...');
+    console.log('[server] fileName:', fileName);
+    console.log('[server] mimeType:', mimeType);
+    console.log('[server] base64 length:', base64.length);
+
+    // eslint-disable-next-line no-undef
+    const buffer = Buffer.from(base64, 'base64');
+    console.log('[server] Buffer size:', buffer.length);
+
+    if (buffer.length < 4) {
+      return res.status(400).json({ error: 'File is too small to be a valid DOCX' });
+    }
+
+    const firstBytes = buffer.slice(0, 4);
+    if (firstBytes[0] !== 0x50 || firstBytes[1] !== 0x4B || 
+        firstBytes[2] !== 0x03 || firstBytes[3] !== 0x04) {
+      console.error('[server] Invalid DOCX: Missing ZIP signature');
+      console.error('[server] First 4 bytes:', firstBytes.toString('hex'));
+      return res.status(400).json({ 
+        error: "This file isn't a valid .docx Word document. Please ensure it's saved as .docx (Word 2007+)." 
+      });
+    }
+
+    console.log('[server] Valid DOCX detected, extracting text with mammoth...');
+
+    const result = await mammoth.extractRawText({ buffer });
+    const text = cleanExtractedText(result.value);
+
+    console.log('[server] Extraction successful');
+    console.log('[server] Extracted text length:', text.length);
+
+    if (text.length < 200) {
+      console.warn('[server] Extracted text is very short');
+      return res.status(400).json({
+        error: 'Extracted text is too short. Please ensure your resume has content.',
+        extractedLength: text.length,
+      });
+    }
+
+    if (text.includes('%PDF-') || text.includes('/Title (') || text.includes('obj <</')) {
+      console.error('[server] PDF markers detected in extracted text!');
+      return res.status(400).json({
+        error: 'Invalid extraction: PDF structure detected in text. Please use a DOCX file.',
+      });
+    }
+
+    res.json({ text });
+  } catch (error) {
+    console.error('[server] Error extracting DOCX:', error);
+    res.status(500).json({
+      error: 'Failed to extract text from DOCX',
+      message: error.message,
+    });
+  }
 });
 
 app.post('/extract-resume-text', uploadPDF.single('file'), async (req, res) => {
@@ -123,6 +190,7 @@ app.post('/resume/fingerprint-template', express.json(), async (req, res) => {
     }
 
     console.log('[server] Decoding base64 DOCX...');
+    // eslint-disable-next-line no-undef
     const buffer = Buffer.from(templateDocxBase64, 'base64');
 
     console.log('[server] Extracting DOCX structure with mammoth...');
@@ -404,6 +472,7 @@ app.listen(PORT, () => {
   console.log(`[server] Resume extractor service running on port ${PORT}`);
   console.log(`[server] Health check: http://localhost:${PORT}/health`);
   console.log(`[server] Endpoints:`);
+  console.log(`[server]   - POST /extract/docx`);
   console.log(`[server]   - POST /extract-resume-text`);
   console.log(`[server]   - POST /resume/fingerprint-template`);
   console.log(`[server]   - POST /resume/render-docx`);
