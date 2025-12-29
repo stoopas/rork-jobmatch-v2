@@ -15,6 +15,7 @@ import {
 } from "react-native";
 
 import { useUserProfile } from "../../contexts/UserProfileContext";
+import { copyTextSafe } from "../../lib/clipboard";
 import { generateTailoredResumeJson, type TemplateFingerprint } from "../../lib/tailoredResumeGenerator";
 
 export default function GenerateResumeScreen() {
@@ -136,10 +137,11 @@ ${
   }, [job, generateResume]);
 
   const copyToClipboard = async () => {
-    const Clipboard = await import("expo-clipboard");
-    await Clipboard.setStringAsync(resumeText);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    const success = await copyTextSafe(resumeText);
+    if (success) {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
   };
 
   const downloadDocx = async () => {
@@ -329,22 +331,24 @@ ${
       {previewExpanded && (
         <View style={styles.resumeCard}>
           <Text style={styles.resumeText}>{resumeText}</Text>
-          <TouchableOpacity
-            style={styles.copyButtonInline}
-            onPress={copyToClipboard}
-          >
-            {copied ? (
-              <>
-                <Check size={18} color="#10B981" />
-                <Text style={[styles.copyButtonInlineText, { color: "#10B981" }]}>Copied!</Text>
-              </>
-            ) : (
-              <>
-                <Copy size={18} color="#0066FF" />
-                <Text style={styles.copyButtonInlineText}>Copy Text</Text>
-              </>
-            )}
-          </TouchableOpacity>
+          {Platform.OS === "web" && (
+            <TouchableOpacity
+              style={styles.copyButtonInline}
+              onPress={copyToClipboard}
+            >
+              {copied ? (
+                <>
+                  <Check size={18} color="#10B981" />
+                  <Text style={[styles.copyButtonInlineText, { color: "#10B981" }]}>Copied!</Text>
+                </>
+              ) : (
+                <>
+                  <Copy size={18} color="#0066FF" />
+                  <Text style={styles.copyButtonInlineText}>Copy Text</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          )}
         </View>
       )}
 
