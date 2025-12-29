@@ -113,7 +113,7 @@ Return only valid JSON, no additional text.`,
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.header}>
-          <Briefcase size={40} color={Brand.colors.accent} strokeWidth={1.5} />
+          <Briefcase size={40} color={Brand.colors.accent} strokeWidth={1} />
           <Text style={styles.title}>Add a job posting</Text>
           <Text style={styles.subtitle}>
             Paste the job description and we&apos;ll prepare your tailored resume
@@ -139,7 +139,7 @@ Return only valid JSON, no additional text.`,
         >
           {isAnalyzing ? (
             <>
-              <ActivityIndicator color={Brand.colors.surface} size="small" />
+              <ActivityIndicator color="#0B0F14" size="small" />
               <Text style={styles.analyzeButtonText}>Analyzing...</Text>
             </>
           ) : (
@@ -193,7 +193,7 @@ const styles = StyleSheet.create({
     textAlignVertical: "top",
     borderWidth: 1,
     borderColor: Brand.colors.border,
-    ...Brand.shadow,
+
   },
   analyzeButton: {
     flexDirection: "row",
@@ -210,6 +210,6 @@ const styles = StyleSheet.create({
   analyzeButtonText: {
     fontSize: Brand.typography.sizes.h3,
     fontWeight: "600" as const,
-    color: Brand.colors.surface,
+    color: "#0B0F14",
   },
 });

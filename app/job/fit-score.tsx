@@ -22,6 +22,7 @@ import {
 import { useUserProfile } from "../../contexts/UserProfileContext";
 import { generateText } from "@rork-ai/toolkit-sdk";
 import type { FitScore } from "../../types/profile";
+import { Brand } from "../../constants/brand";
 
 export default function FitScoreScreen() {
   const { jobId } = useLocalSearchParams<{ jobId: string }>();
@@ -148,10 +149,10 @@ Return ONLY valid JSON in this exact format:
   }, [job, analyzeFit]);
 
   const getScoreColor = (score: number) => {
-    if (score >= 90) return "#10B981";
-    if (score >= 75) return "#3B82F6";
-    if (score >= 50) return "#F59E0B";
-    return "#EF4444";
+    if (score >= 90) return Brand.colors.success;
+    if (score >= 75) return Brand.colors.accent;
+    if (score >= 50) return Brand.colors.warning;
+    return Brand.colors.danger;
   };
 
   const getScoreLabel = (score: number) => {
@@ -172,7 +173,7 @@ Return ONLY valid JSON in this exact format:
   if (isAnalyzing) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#0066FF" />
+        <ActivityIndicator size="large" color={Brand.colors.accent} />
         <Text style={styles.loadingText}>Analyzing your fit...</Text>
         <Text style={styles.loadingSubtext}>
           Comparing your profile with job requirements
@@ -256,7 +257,7 @@ Return ONLY valid JSON in this exact format:
         </View>
 
         <ScoreDimension
-          icon={<Briefcase size={20} color="#0066FF" />}
+          icon={<Briefcase size={20} color={Brand.colors.textMuted} />}
           title="Experience Alignment"
           score={fitScore.experienceAlignment}
           rationale={fitScore.rationale.experienceAlignment}
@@ -265,7 +266,7 @@ Return ONLY valid JSON in this exact format:
         />
 
         <ScoreDimension
-          icon={<Target size={20} color="#0066FF" />}
+          icon={<Target size={20} color={Brand.colors.textMuted} />}
           title="Technical Skill Match"
           score={fitScore.technicalSkillMatch}
           rationale={fitScore.rationale.technicalSkillMatch}
@@ -274,7 +275,7 @@ Return ONLY valid JSON in this exact format:
         />
 
         <ScoreDimension
-          icon={<Award size={20} color="#0066FF" />}
+          icon={<Award size={20} color={Brand.colors.textMuted} />}
           title="Domain Relevance"
           score={fitScore.domainRelevance}
           rationale={fitScore.rationale.domainRelevance}
@@ -283,7 +284,7 @@ Return ONLY valid JSON in this exact format:
         />
 
         <ScoreDimension
-          icon={<Users size={20} color="#0066FF" />}
+          icon={<Users size={20} color={Brand.colors.textMuted} />}
           title="Stage/Cultural Fit"
           score={fitScore.stageCulturalFit}
           rationale={fitScore.rationale.stageCulturalFit}
@@ -292,7 +293,7 @@ Return ONLY valid JSON in this exact format:
         />
 
         <ScoreDimension
-          icon={<TrendingUp size={20} color="#0066FF" />}
+          icon={<TrendingUp size={20} color={Brand.colors.textMuted} />}
           title="Impact Potential"
           score={fitScore.impactPotential}
           rationale={fitScore.rationale.impactPotential}
@@ -311,8 +312,8 @@ Return ONLY valid JSON in this exact format:
             })
           }
         >
-          <FileText size={20} color="#FFFFFF" />
-          <Text style={styles.generateButtonText}>Generate Tailored Resume</Text>
+          <FileText size={20} color="#0B0F14" />
+          <Text style={styles.generateButtonText}>Generate Resume</Text>
         </TouchableOpacity>
       )}
 
@@ -344,9 +345,9 @@ function ScoreDimension({
   onToggle: () => void;
 }) {
   const getBarColor = (score: number) => {
-    if (score >= 75) return "#10B981";
-    if (score >= 50) return "#F59E0B";
-    return "#EF4444";
+    if (score >= 75) return Brand.colors.success;
+    if (score >= 50) return Brand.colors.warning;
+    return Brand.colors.danger;
   };
 
   return (
@@ -375,7 +376,7 @@ function ScoreDimension({
       )}
       <View style={styles.expandIndicator}>
         <Text style={styles.expandText}>
-          {expanded ? "Tap to collapse" : "Tap to expand"}
+          {expanded ? "Tap to collapse" : "Tap for details"}
         </Text>
       </View>
     </TouchableOpacity>
@@ -385,229 +386,220 @@ function ScoreDimension({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F8F9FA",
+    backgroundColor: Brand.colors.bg,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#F8F9FA",
-    padding: 24,
+    backgroundColor: Brand.colors.bg,
+    padding: Brand.spacing.lg,
   },
   loadingText: {
-    fontSize: 18,
+    fontSize: Brand.typography.sizes.h3,
     fontWeight: "600" as const,
-    color: "#1A1A1A",
-    marginTop: 16,
+    color: Brand.colors.text,
+    marginTop: Brand.spacing.md,
   },
   loadingSubtext: {
-    fontSize: 14,
-    color: "#666666",
-    marginTop: 8,
+    fontSize: Brand.typography.sizes.small,
+    color: Brand.colors.textMuted,
+    marginTop: Brand.spacing.xs,
   },
   errorContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#F8F9FA",
-    padding: 24,
+    backgroundColor: Brand.colors.bg,
+    padding: Brand.spacing.lg,
   },
   errorText: {
-    fontSize: 16,
-    color: "#666666",
-    marginBottom: 16,
+    fontSize: Brand.typography.sizes.body,
+    color: Brand.colors.textMuted,
+    marginBottom: Brand.spacing.md,
   },
   retryButton: {
-    backgroundColor: "#0066FF",
+    backgroundColor: Brand.colors.accent,
     paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 12,
+    paddingHorizontal: Brand.spacing.lg,
+    borderRadius: Brand.radius.button,
   },
   retryButtonText: {
-    fontSize: 15,
+    fontSize: Brand.typography.sizes.body,
     fontWeight: "600" as const,
-    color: "#FFFFFF",
+    color: "#0B0F14",
   },
   header: {
-    padding: 24,
-    paddingBottom: 16,
+    padding: Brand.spacing.lg,
+    paddingBottom: Brand.spacing.md,
   },
   jobInfo: {
     alignItems: "center",
   },
   jobTitle: {
-    fontSize: 24,
-    fontWeight: "700" as const,
-    color: "#1A1A1A",
+    fontSize: Brand.typography.sizes.h1,
+    fontWeight: "600" as const,
+    color: Brand.colors.text,
     textAlign: "center",
-    marginBottom: 8,
+    marginBottom: Brand.spacing.xs,
   },
   jobCompany: {
-    fontSize: 16,
-    color: "#666666",
+    fontSize: Brand.typography.sizes.body,
+    color: Brand.colors.textMuted,
     textAlign: "center",
   },
   scoreCard: {
-    marginHorizontal: 24,
-    padding: 32,
-    backgroundColor: "#FFFFFF",
-    borderRadius: 20,
+    marginHorizontal: Brand.spacing.lg,
+    padding: Brand.spacing.xl,
+    backgroundColor: Brand.colors.surface,
+    borderRadius: Brand.radius.card,
+    borderWidth: 1,
+    borderColor: Brand.colors.border,
     alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 4,
   },
   scoreHeader: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
-    marginBottom: 20,
+    gap: Brand.spacing.sm,
+    marginBottom: Brand.spacing.lg,
   },
   scoreTitle: {
-    fontSize: 18,
+    fontSize: Brand.typography.sizes.h3,
     fontWeight: "600" as const,
-    color: "#1A1A1A",
+    color: Brand.colors.text,
   },
   scoreCircle: {
     alignItems: "center",
-    marginBottom: 16,
+    marginBottom: Brand.spacing.md,
   },
   scoreNumber: {
     fontSize: 64,
-    fontWeight: "700" as const,
+    fontWeight: "600" as const,
     lineHeight: 72,
   },
   scoreOutOf: {
     fontSize: 20,
-    color: "#999999",
+    color: Brand.colors.textFaint,
     marginTop: -8,
   },
   scoreBadge: {
-    paddingVertical: 8,
-    paddingHorizontal: 20,
-    borderRadius: 20,
+    paddingVertical: Brand.spacing.sm,
+    paddingHorizontal: Brand.spacing.lg,
+    borderRadius: Brand.radius.pill,
   },
   scoreBadgeText: {
-    fontSize: 15,
+    fontSize: Brand.typography.sizes.body,
     fontWeight: "600" as const,
   },
   section: {
-    padding: 24,
+    padding: Brand.spacing.lg,
   },
   sectionHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 16,
+    marginBottom: Brand.spacing.md,
   },
   sectionTitle: {
-    fontSize: 20,
-    fontWeight: "700" as const,
-    color: "#1A1A1A",
+    fontSize: Brand.typography.sizes.h2,
+    fontWeight: "600" as const,
+    color: Brand.colors.text,
   },
   expandAllText: {
-    fontSize: 14,
+    fontSize: Brand.typography.sizes.small,
     fontWeight: "600" as const,
-    color: "#0066FF",
+    color: Brand.colors.accent,
   },
   dimensionCard: {
-    backgroundColor: "#FFFFFF",
-    padding: 20,
-    borderRadius: 16,
-    marginBottom: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    backgroundColor: Brand.colors.surface,
+    padding: Brand.spacing.lg,
+    borderRadius: Brand.radius.card,
+    borderWidth: 1,
+    borderColor: Brand.colors.border,
+    marginBottom: Brand.spacing.md,
   },
   dimensionHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 12,
+    marginBottom: Brand.spacing.sm,
   },
   dimensionTitleContainer: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
+    gap: Brand.spacing.sm,
     flex: 1,
   },
   dimensionTitle: {
-    fontSize: 16,
+    fontSize: Brand.typography.sizes.body,
     fontWeight: "600" as const,
-    color: "#1A1A1A",
+    color: Brand.colors.text,
   },
   dimensionScore: {
-    fontSize: 22,
-    fontWeight: "700" as const,
+    fontSize: Brand.typography.sizes.h2,
+    fontWeight: "600" as const,
   },
   progressBar: {
-    height: 8,
-    backgroundColor: "#F0F0F0",
-    borderRadius: 4,
-    marginBottom: 12,
+    height: 6,
+    backgroundColor: Brand.colors.surfaceAlt,
+    borderRadius: 3,
+    marginBottom: Brand.spacing.sm,
     overflow: "hidden",
   },
   progressFill: {
     height: "100%",
-    borderRadius: 4,
+    borderRadius: 3,
   },
   rationaleContainer: {
-    marginTop: 12,
-    paddingTop: 12,
+    marginTop: Brand.spacing.sm,
+    paddingTop: Brand.spacing.sm,
     borderTopWidth: 1,
-    borderTopColor: "#F0F0F0",
+    borderTopColor: Brand.colors.border,
   },
   dimensionRationale: {
-    fontSize: 14,
-    color: "#666666",
-    lineHeight: 20,
+    fontSize: Brand.typography.sizes.small,
+    color: Brand.colors.textMuted,
+    lineHeight: Brand.typography.lineHeights.small,
   },
   expandIndicator: {
-    marginTop: 8,
+    marginTop: Brand.spacing.xs,
     alignItems: "center",
   },
   expandText: {
-    fontSize: 12,
-    color: "#999999",
+    fontSize: Brand.typography.sizes.micro,
+    color: Brand.colors.textFaint,
     fontStyle: "italic" as const,
   },
   generateButton: {
-    marginHorizontal: 24,
-    marginTop: 8,
+    marginHorizontal: Brand.spacing.lg,
+    marginTop: Brand.spacing.sm,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 10,
-    backgroundColor: "#0066FF",
-    paddingVertical: 16,
-    borderRadius: 16,
-    shadowColor: "#0066FF",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 12,
-    elevation: 4,
+    gap: Brand.spacing.sm,
+    backgroundColor: Brand.colors.accent,
+    paddingVertical: Brand.spacing.md,
+    borderRadius: Brand.radius.button,
   },
   generateButtonText: {
-    fontSize: 17,
+    fontSize: Brand.typography.sizes.h3,
     fontWeight: "600" as const,
-    color: "#FFFFFF",
+    color: "#0B0F14",
   },
   backButton: {
-    marginHorizontal: 24,
-    marginTop: 12,
+    marginHorizontal: Brand.spacing.lg,
+    marginTop: Brand.spacing.md,
     paddingVertical: 14,
-    borderRadius: 12,
+    borderRadius: Brand.radius.button,
     alignItems: "center",
-    backgroundColor: "#F0F0F0",
+    backgroundColor: Brand.colors.surfaceAlt,
+    borderWidth: 1,
+    borderColor: Brand.colors.border,
   },
   backButtonText: {
-    fontSize: 15,
+    fontSize: Brand.typography.sizes.body,
     fontWeight: "600" as const,
-    color: "#1A1A1A",
+    color: Brand.colors.text,
   },
   bottomPadding: {
     height: 40,

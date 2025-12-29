@@ -1,23 +1,24 @@
 import { Platform } from "react-native";
 
 const colors = {
-  bg: "#FAFAF8",
-  surface: "#FFFFFF",
-  surfaceAlt: "#F3F4F1",
-  border: "#E6E7E2",
-  text: "#111827",
-  textMuted: "#6B7280",
-  textFaint: "#9CA3AF",
-  accent: "#1F3A5F",
-  accentSoft: "#E7EEF7",
-  success: "#2F6F4E",
-  warning: "#9A6B2F",
-  danger: "#A33A3A",
+  bg: "#0B0F14",
+  surface: "#0F1620",
+  surfaceAlt: "#111B26",
+  border: "#1E2A3A",
+  text: "#E7EEF7",
+  textMuted: "#A7B3C2",
+  textFaint: "#6F7D90",
+  accent: "#5BC0EB",
+  accentSoft: "#0F2A36",
+  success: "#3CCB7F",
+  warning: "#E3B341",
+  danger: "#E06C75",
 } as const;
 
 const typography = {
   fontRegular: Platform.select({ ios: "System", android: "Roboto", default: "System" }) as string,
   fontSemibold: Platform.select({ ios: "System", android: "Roboto", default: "System" }) as string,
+  fontMono: Platform.select({ ios: "Menlo", android: "monospace", default: "monospace" }) as string,
   sizes: {
     h1: 28,
     h2: 22,
@@ -45,7 +46,7 @@ const spacing = {
 } as const;
 
 const radius = {
-  card: 18,
+  card: 16,
   input: 14,
   button: 14,
   pill: 999,
@@ -53,10 +54,10 @@ const radius = {
 
 const shadow = {
   shadowColor: "#000",
-  shadowOpacity: 0.06,
-  shadowOffset: { width: 0, height: 6 },
-  shadowRadius: 16,
-  elevation: 2,
+  shadowOpacity: 0.18,
+  shadowOffset: { width: 0, height: 10 },
+  shadowRadius: 22,
+  elevation: 3,
 } as const;
 
 export const Brand = {

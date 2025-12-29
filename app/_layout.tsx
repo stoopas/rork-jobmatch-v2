@@ -42,6 +42,10 @@ function RootLayoutNav() {
         name="index"
         options={{
           title: "JustApply",
+          headerStyle: {
+            backgroundColor: Brand.colors.surface,
+          },
+          headerTintColor: Brand.colors.text,
           headerShown: false,
         }}
       />
@@ -50,6 +54,8 @@ function RootLayoutNav() {
         options={{
           title: "Edit Profile",
           headerLargeTitle: false,
+          headerStyle: { backgroundColor: Brand.colors.surface },
+          headerTintColor: Brand.colors.text,
         }}
       />
       <Stack.Screen
@@ -57,6 +63,8 @@ function RootLayoutNav() {
         options={{
           title: "Add Job",
           headerLargeTitle: false,
+          headerStyle: { backgroundColor: Brand.colors.surface },
+          headerTintColor: Brand.colors.text,
         }}
       />
       <Stack.Screen
@@ -64,6 +72,8 @@ function RootLayoutNav() {
         options={{
           title: "Quick Questions",
           headerLargeTitle: false,
+          headerStyle: { backgroundColor: Brand.colors.surface },
+          headerTintColor: Brand.colors.text,
         }}
       />
       <Stack.Screen
@@ -71,6 +81,8 @@ function RootLayoutNav() {
         options={{
           title: "Fit Score",
           headerLargeTitle: false,
+          headerStyle: { backgroundColor: Brand.colors.surface },
+          headerTintColor: Brand.colors.text,
         }}
       />
       <Stack.Screen
@@ -78,6 +90,8 @@ function RootLayoutNav() {
         options={{
           title: "Resume Format",
           headerLargeTitle: false,
+          headerStyle: { backgroundColor: Brand.colors.surface },
+          headerTintColor: Brand.colors.text,
         }}
       />
       <Stack.Screen
@@ -85,6 +99,8 @@ function RootLayoutNav() {
         options={{
           title: "Resume Ready",
           headerLargeTitle: false,
+          headerStyle: { backgroundColor: Brand.colors.surface },
+          headerTintColor: Brand.colors.text,
         }}
       />
       <Stack.Screen

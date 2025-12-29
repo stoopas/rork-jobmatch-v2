@@ -182,7 +182,7 @@ Return ONLY valid JSON in this format:
           </Text>
           <TouchableOpacity style={styles.continueButton} onPress={handleComplete}>
             <Text style={styles.continueButtonText}>Continue</Text>
-            <ArrowRight size={20} color={Brand.colors.surface} />
+            <ArrowRight size={20} color="#0B0F14" />
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -306,7 +306,7 @@ const styles = StyleSheet.create({
   continueButtonText: {
     fontSize: Brand.typography.sizes.h3,
     fontWeight: "600" as const,
-    color: Brand.colors.surface,
+    color: "#0B0F14",
   },
   skipAllButton: {
     marginHorizontal: Brand.spacing.lg,

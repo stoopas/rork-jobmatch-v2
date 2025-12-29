@@ -184,7 +184,7 @@ export default function HomeScreen() {
         <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
           <View style={styles.onboardingContainer}>
             <View style={styles.onboardingIconContainer}>
-              <FileText size={64} color={Brand.colors.accent} strokeWidth={1.5} />
+              <FileText size={64} color={Brand.colors.accent} strokeWidth={1} />
             </View>
 
             <Text style={styles.onboardingTitle}>JustApply</Text>
@@ -207,7 +207,7 @@ export default function HomeScreen() {
                 {isParsingResume || isOnboarding ? (
                   <ActivityIndicator size="small" color={Brand.colors.surface} />
                 ) : (
-                  <Upload size={22} color={Brand.colors.surface} />
+                  <Upload size={22} color="#0B0F14" />
                 )}
                 <Text style={styles.onboardingPrimaryButtonText}>
                   {isParsingResume || isOnboarding ? "Processing..." : "Upload your resume"}
@@ -236,7 +236,7 @@ export default function HomeScreen() {
 
         <View style={styles.profileCard}>
           <View style={styles.profileHeader}>
-            <FileText size={20} color={Brand.colors.accent} />
+            <FileText size={20} color={Brand.colors.textMuted} />
             <Text style={styles.profileTitle}>Profile</Text>
           </View>
           <View style={styles.statsContainer}>
@@ -268,7 +268,7 @@ export default function HomeScreen() {
             style={styles.actionCard}
             onPress={() => router.push("/job/analyze")}
           >
-            <Briefcase size={22} color={Brand.colors.surface} />
+            <Briefcase size={22} color="#0B0F14" />
             <View style={styles.actionContent}>
               <Text style={styles.actionTitle}>Add a job posting</Text>
               <Text style={styles.actionDescription}>
@@ -388,12 +388,12 @@ const styles = StyleSheet.create({
   actionTitle: {
     fontSize: Brand.typography.sizes.h3,
     fontWeight: "600" as const,
-    color: Brand.colors.surface,
+    color: "#0B0F14",
     marginBottom: 4,
   },
   actionDescription: {
     fontSize: Brand.typography.sizes.small,
-    color: Brand.colors.surface,
+    color: "#0B0F14",
     opacity: 0.85,
     lineHeight: Brand.typography.lineHeights.small,
   },
@@ -461,7 +461,7 @@ const styles = StyleSheet.create({
   onboardingPrimaryButtonText: {
     fontSize: Brand.typography.sizes.h3,
     fontWeight: "600" as const,
-    color: Brand.colors.surface,
+    color: "#0B0F14",
   },
   onboardingHint: {
     fontSize: Brand.typography.sizes.small,
