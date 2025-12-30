@@ -59,6 +59,15 @@ function RootLayoutNav() {
         }}
       />
       <Stack.Screen
+        name="profile/manage"
+        options={{
+          title: "Manage Profiles",
+          headerLargeTitle: false,
+          headerStyle: { backgroundColor: BoringAI.colors.surface },
+          headerTintColor: BoringAI.colors.text,
+        }}
+      />
+      <Stack.Screen
         name="job/analyze"
         options={{
           title: "Add Job",

@@ -2,7 +2,7 @@ import * as DocumentPicker from "expo-document-picker";
 import { extractResumeText } from "../lib/resumeTextExtractor";
 import { ensureLocalCacheUri } from "../lib/fileUtils";
 import { router } from "expo-router";
-import { FileText, Briefcase, Upload } from "lucide-react-native";
+import { FileText, Briefcase, Upload, Settings, Plus } from "lucide-react-native";
 import React, { useState } from "react";
 import {
   ActivityIndicator,
@@ -64,11 +64,67 @@ export default function HomeScreen() {
 
       const domainExperience = parsed?.domainExperience || [];
 
+      const dedupeSkills = (existing: typeof skills, incoming: typeof skills) => {
+        const existingNames = new Set(
+          existing.map((s) => s.name.trim().toLowerCase())
+        );
+        return incoming.filter(
+          (s) => !existingNames.has(s.name.trim().toLowerCase())
+        );
+      };
+
+      const dedupeTools = (existing: typeof tools, incoming: typeof tools) => {
+        const existingNames = new Set(
+          existing.map((t) => t.name.trim().toLowerCase())
+        );
+        return incoming.filter(
+          (t) => !existingNames.has(t.name.trim().toLowerCase())
+        );
+      };
+
+      const dedupeCerts = (
+        existing: typeof certifications,
+        incoming: typeof certifications
+      ) => {
+        const existingKeys = new Set(
+          existing.map(
+            (c) => `${c.name.trim().toLowerCase()}_${c.issuer.trim().toLowerCase()}`
+          )
+        );
+        return incoming.filter(
+          (c) =>
+            !existingKeys.has(
+              `${c.name.trim().toLowerCase()}_${c.issuer.trim().toLowerCase()}`
+            )
+        );
+      };
+
+      const dedupeExperience = (
+        existing: typeof experience,
+        incoming: typeof experience
+      ) => {
+        const existingKeys = new Set(
+          existing.map(
+            (e) =>
+              `${e.title.trim().toLowerCase()}_${e.company.trim().toLowerCase()}_${e.startDate}`
+          )
+        );
+        return incoming.filter(
+          (e) =>
+            !existingKeys.has(
+              `${e.title.trim().toLowerCase()}_${e.company.trim().toLowerCase()}_${e.startDate}`
+            )
+        );
+      };
+
       updateProfile({
-        experience: [...profile.experience, ...experience],
-        skills: [...profile.skills, ...skills],
-        certifications: [...profile.certifications, ...certifications],
-        tools: [...profile.tools, ...tools],
+        experience: [...profile.experience, ...dedupeExperience(profile.experience, experience)],
+        skills: [...profile.skills, ...dedupeSkills(profile.skills, skills)],
+        certifications: [
+          ...profile.certifications,
+          ...dedupeCerts(profile.certifications, certifications),
+        ],
+        tools: [...profile.tools, ...dedupeTools(profile.tools, tools)],
         projects: [...profile.projects, ...projects],
         domainExperience: [
           ...profile.domainExperience,
@@ -236,8 +292,16 @@ export default function HomeScreen() {
 
         <View style={styles.profileCard}>
           <View style={styles.profileHeader}>
-            <FileText size={20} color={BoringAI.colors.textMuted} />
-            <Text style={styles.profileTitle}>Profile</Text>
+            <View style={styles.profileHeaderLeft}>
+              <FileText size={20} color={BoringAI.colors.textMuted} />
+              <Text style={styles.profileTitle}>Profile</Text>
+            </View>
+            <TouchableOpacity
+              style={styles.manageButton}
+              onPress={() => router.push("/profile/manage")}
+            >
+              <Settings size={18} color={BoringAI.colors.textMuted} strokeWidth={1.5} />
+            </TouchableOpacity>
           </View>
           <View style={styles.statsContainer}>
             <View style={styles.statItem}>
@@ -261,6 +325,47 @@ export default function HomeScreen() {
           >
             <Text style={styles.editButtonText}>Edit</Text>
           </TouchableOpacity>
+        </View>
+
+        <View style={styles.resumeCard}>
+          <View style={styles.resumeHeader}>
+            <FileText size={20} color={BoringAI.colors.textMuted} />
+            <Text style={styles.resumeTitle}>Resumes</Text>
+          </View>
+          <View style={styles.resumeStats}>
+            <Text style={styles.resumeStatsText}>
+              {profile.resumeAssets.length} saved resume{profile.resumeAssets.length !== 1 ? 's' : ''}
+            </Text>
+            {profile.resumeAssets.length > 0 && profile.resumeAssets[profile.resumeAssets.length - 1] && (
+              <Text style={styles.resumeLatest}>
+                Latest: {profile.resumeAssets[profile.resumeAssets.length - 1].name}
+              </Text>
+            )}
+          </View>
+          <View style={styles.resumeActions}>
+            <TouchableOpacity
+              style={styles.addResumeButton}
+              onPress={handleUploadResume}
+              disabled={isParsingResume || isOnboarding}
+            >
+              {isParsingResume || isOnboarding ? (
+                <ActivityIndicator size="small" color={BoringAI.colors.text} />
+              ) : (
+                <Plus size={18} color={BoringAI.colors.text} strokeWidth={2} />
+              )}
+              <Text style={styles.addResumeButtonText}>
+                {isParsingResume || isOnboarding ? "Processing..." : "Add another resume"}
+              </Text>
+            </TouchableOpacity>
+            {profile.resumeAssets.length > 0 && (
+              <TouchableOpacity
+                style={styles.manageResumesButton}
+                onPress={() => router.push("/profile/edit")}
+              >
+                <Text style={styles.manageResumesButtonText}>Manage</Text>
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
 
         <View style={styles.actionsContainer}>
@@ -326,8 +431,23 @@ const styles = StyleSheet.create({
   profileHeader: {
     flexDirection: "row",
     alignItems: "center",
-    gap: BoringAI.spacing.sm,
+    justifyContent: "space-between",
     marginBottom: BoringAI.spacing.md,
+  },
+  profileHeaderLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: BoringAI.spacing.sm,
+  },
+  manageButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: BoringAI.colors.surfaceAlt,
+    borderWidth: BoringAI.border.hairline,
+    borderColor: BoringAI.colors.border,
+    alignItems: "center",
+    justifyContent: "center",
   },
   profileTitle: {
     fontSize: 18,
@@ -373,9 +493,77 @@ const styles = StyleSheet.create({
     fontWeight: "600" as const,
     color: BoringAI.colors.text,
   },
+  resumeCard: {
+    marginHorizontal: BoringAI.spacing.xl,
+    marginTop: BoringAI.spacing.lg,
+    padding: BoringAI.spacing.lg,
+    backgroundColor: BoringAI.colors.surface,
+    borderRadius: BoringAI.radius.card,
+    borderWidth: BoringAI.border.hairline,
+    borderColor: BoringAI.colors.border,
+    ...BoringAI.shadow.cardShadow,
+  },
+  resumeHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: BoringAI.spacing.sm,
+    marginBottom: BoringAI.spacing.md,
+  },
+  resumeTitle: {
+    fontSize: 18,
+    fontWeight: "700" as const,
+    color: BoringAI.colors.text,
+  },
+  resumeStats: {
+    marginBottom: BoringAI.spacing.md,
+  },
+  resumeStatsText: {
+    fontSize: 16,
+    color: BoringAI.colors.text,
+    marginBottom: BoringAI.spacing.xxs,
+  },
+  resumeLatest: {
+    fontSize: 13,
+    color: BoringAI.colors.textMuted,
+  },
+  resumeActions: {
+    flexDirection: "row",
+    gap: BoringAI.spacing.sm,
+  },
+  addResumeButton: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: BoringAI.colors.surface,
+    borderWidth: BoringAI.border.hairline,
+    borderColor: BoringAI.colors.borderStrong,
+    paddingVertical: 12,
+    borderRadius: BoringAI.radius.button,
+    gap: BoringAI.spacing.xs,
+  },
+  addResumeButtonText: {
+    fontSize: 16,
+    fontWeight: "600" as const,
+    color: BoringAI.colors.text,
+  },
+  manageResumesButton: {
+    paddingHorizontal: BoringAI.spacing.md,
+    paddingVertical: 12,
+    backgroundColor: BoringAI.colors.surfaceAlt,
+    borderWidth: BoringAI.border.hairline,
+    borderColor: BoringAI.colors.border,
+    borderRadius: BoringAI.radius.button,
+    justifyContent: "center",
+  },
+  manageResumesButtonText: {
+    fontSize: 16,
+    fontWeight: "600" as const,
+    color: BoringAI.colors.textMuted,
+  },
   actionsContainer: {
     marginHorizontal: BoringAI.spacing.xl,
-    marginTop: BoringAI.spacing.xxl,
+    marginTop: BoringAI.spacing.lg,
   },
   actionCard: {
     flexDirection: "row",
