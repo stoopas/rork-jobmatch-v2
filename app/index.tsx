@@ -2,7 +2,7 @@ import * as DocumentPicker from "expo-document-picker";
 import { extractResumeText } from "../lib/resumeTextExtractor";
 import { ensureLocalCacheUri } from "../lib/fileUtils";
 import { router } from "expo-router";
-import { FileText, Briefcase, Upload, Settings, Plus } from "lucide-react-native";
+import { FileText, Briefcase, Upload, Settings, Plus, History } from "lucide-react-native";
 import React, { useState } from "react";
 import {
   ActivityIndicator,
@@ -17,14 +17,23 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useMutation } from "@tanstack/react-query";
 
 import { useUserProfile } from "../contexts/UserProfileContext";
+import { loadJobRuns } from "../lib/historyStore";
 import { parseResumeText, showParseSuccessAlert, type ResumeData } from "../lib/resumeParser";
 import { BoringAI } from "../ui/theme/boringAiTheme";
 
 export default function HomeScreen() {
-  const { profile, updateProfile, isProfileComplete, addResumeAsset } = useUserProfile();
+  const { profile, updateProfile, isProfileComplete, addResumeAsset, activeProfileId } = useUserProfile();
   const [isOnboarding, setIsOnboarding] = useState(false);
 
   const hasProfile = isProfileComplete();
+
+  const [jobRunsCount, setJobRunsCount] = React.useState(0);
+
+  React.useEffect(() => {
+    if (activeProfileId && hasProfile) {
+      loadJobRuns(activeProfileId).then((runs) => setJobRunsCount(runs.length));
+    }
+  }, [activeProfileId, hasProfile]);
 
   const { mutateAsync: parseResumeAsync, isPending: isParsingResume } = useMutation<ResumeData, Error, string>({
     mutationFn: async (resumeText: string): Promise<ResumeData> => {
@@ -368,6 +377,24 @@ export default function HomeScreen() {
           </View>
         </View>
 
+        <View style={styles.jobsCard}>
+          <View style={styles.jobsHeader}>
+            <History size={20} color={BoringAI.colors.textMuted} />
+            <Text style={styles.jobsTitle}>Jobs</Text>
+          </View>
+          <View style={styles.jobsStats}>
+            <Text style={styles.jobsStatsText}>
+              {jobRunsCount} job{jobRunsCount !== 1 ? 's' : ''} with tailored resumes
+            </Text>
+          </View>
+          <TouchableOpacity
+            style={styles.viewJobsButton}
+            onPress={() => router.push("/jobs")}
+          >
+            <Text style={styles.viewJobsButtonText}>View jobs</Text>
+          </TouchableOpacity>
+        </View>
+
         <View style={styles.actionsContainer}>
           <TouchableOpacity
             style={styles.actionCard}
@@ -596,6 +623,47 @@ const styles = StyleSheet.create({
   footerText: {
     fontSize: 13,
     color: BoringAI.colors.textFaint,
+  },
+  jobsCard: {
+    marginHorizontal: BoringAI.spacing.xl,
+    marginTop: BoringAI.spacing.lg,
+    padding: BoringAI.spacing.lg,
+    backgroundColor: BoringAI.colors.surface,
+    borderRadius: BoringAI.radius.card,
+    borderWidth: BoringAI.border.hairline,
+    borderColor: BoringAI.colors.border,
+    ...BoringAI.shadow.cardShadow,
+  },
+  jobsHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: BoringAI.spacing.sm,
+    marginBottom: BoringAI.spacing.md,
+  },
+  jobsTitle: {
+    fontSize: 18,
+    fontWeight: "700" as const,
+    color: BoringAI.colors.text,
+  },
+  jobsStats: {
+    marginBottom: BoringAI.spacing.md,
+  },
+  jobsStatsText: {
+    fontSize: 16,
+    color: BoringAI.colors.text,
+  },
+  viewJobsButton: {
+    backgroundColor: BoringAI.colors.surface,
+    borderWidth: BoringAI.border.hairline,
+    borderColor: BoringAI.colors.borderStrong,
+    paddingVertical: 12,
+    borderRadius: BoringAI.radius.button,
+    alignItems: "center",
+  },
+  viewJobsButtonText: {
+    fontSize: 16,
+    fontWeight: "600" as const,
+    color: BoringAI.colors.text,
   },
   onboardingContainer: {
     flex: 1,

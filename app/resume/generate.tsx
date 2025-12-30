@@ -16,17 +16,19 @@ import {
 
 import { useUserProfile } from "../../contexts/UserProfileContext";
 import { copyTextSafe } from "../../lib/clipboard";
+import { upsertJobRun, addResumeVersion } from "../../lib/historyStore";
 import { generateTailoredResumeJson, type TemplateFingerprint } from "../../lib/tailoredResumeGenerator";
 
 export default function GenerateResumeScreen() {
-  const { jobId, mode, templateResumeAssetId, enforceOnePage } = useLocalSearchParams<{
+  const { jobId, mode, templateResumeAssetId, enforceOnePage, versionNotes } = useLocalSearchParams<{
     jobId: string;
     mode?: string;
     templateResumeAssetId?: string;
     enforceOnePage?: string;
+    versionNotes?: string;
   }>();
 
-  const { profile, jobPostings, getResumeAssets } = useUserProfile();
+  const { profile, jobPostings, getResumeAssets, activeProfileId } = useUserProfile();
   const [resumeText, setResumeText] = useState("");
   const [isGenerating, setIsGenerating] = useState(true);
   const [isDownloading, setIsDownloading] = useState(false);
@@ -122,13 +124,36 @@ ${
 }`;
 
       setResumeText(textSummary);
+
+      try {
+        console.log("[generateResume] Storing resume version in history...");
+        await upsertJobRun(activeProfileId, {
+          jobId: job.id,
+          title: job.title,
+          company: job.company,
+          location: undefined,
+          postingText: job.description,
+          source: "pasted",
+        });
+
+        await addResumeVersion(activeProfileId, {
+          jobId: job.id,
+          notes: versionNotes,
+          resumeText: textSummary,
+          formatResumeId: templateResumeAssetId,
+        });
+
+        console.log("[generateResume] Resume version stored successfully");
+      } catch (historyError: any) {
+        console.error("[generateResume] Failed to store history:", historyError);
+      }
     } catch (error: any) {
       console.error("[generateResume] Error:", error);
       Alert.alert("Generation Error", error.message || "Failed to generate resume. Please try again.");
     } finally {
       setIsGenerating(false);
     }
-  }, [job, profile, renderMode, templateResumeAssetId, enforceOnePage, getResumeAssets]);
+  }, [job, profile, renderMode, templateResumeAssetId, enforceOnePage, getResumeAssets, activeProfileId, versionNotes]);
 
   useEffect(() => {
     if (job) {
